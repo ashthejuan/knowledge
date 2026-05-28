@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+python-dotenv
+pydantic-settings
+
+sqlalchemy
+psycopg2-binary
+redis
+boto3
+
+neo4j
+pinecone-client
+
+PyMuPDF
+httpx
+python-multipart
+aiofiles
