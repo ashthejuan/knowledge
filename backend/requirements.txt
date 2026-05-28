@@ -12,6 +12,8 @@ neo4j
 pinecone-client
 
 PyMuPDF
+trafilatura
+langchain-text-splitters
 httpx
 python-multipart
 aiofiles

@@ -1,7 +1,6 @@
-import asyncio
+import json
 import os
 from pathlib import Path
-from uuid import uuid4
 
 import boto3
 from dotenv import load_dotenv
@@ -20,16 +19,36 @@ s3_client = boto3.client(
 )
 
 
-async def upload_file_to_s3(file_bytes: bytes, filename: str) -> str:
+def upload_file_to_s3(
+    file_bytes: bytes,
+    object_key: str,
+    content_type: str | None = None,
+) -> str:
     """Upload raw file bytes to the documents bucket and return the S3 object key."""
-    safe_filename = Path(filename).name or "upload"
-    object_key = f"{uuid4().hex}_{safe_filename}"
+    extra_args = {}
+    if content_type:
+        extra_args["ContentType"] = content_type
 
-    await asyncio.to_thread(
-        s3_client.put_object,
+    s3_client.put_object(
         Bucket=S3_BUCKET_NAME,
         Key=object_key,
         Body=file_bytes,
+        **extra_args,
     )
 
+    return object_key
+
+
+def download_file_from_s3(object_key: str) -> bytes:
+    response = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=object_key)
+    return response["Body"].read()
+
+
+def upload_json_to_s3(object_key: str, payload: dict) -> str:
+    s3_client.put_object(
+        Bucket=S3_BUCKET_NAME,
+        Key=object_key,
+        Body=json.dumps(payload).encode("utf-8"),
+        ContentType="application/json",
+    )
     return object_key
