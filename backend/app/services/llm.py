@@ -1,0 +1,51 @@
+import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from pinecone import Pinecone
+
+
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL")
+
+# Pinecone index was created with OpenAI text-embedding-3-small (1536 dims),
+# so we must embed both ingested chunks and queries with the same model.
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
+
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "knowledge-base")
+
+if not OPENROUTER_API_KEY:
+    raise RuntimeError("OPENROUTER_API_KEY is not configured")
+
+if not OPENAI_API_KEY:
+    raise RuntimeError(
+        "OPENAI_API_KEY is not configured. It is required to generate "
+        "text-embedding-3-small embeddings that match the Pinecone index."
+    )
+
+if not PINECONE_API_KEY:
+    raise RuntimeError("PINECONE_API_KEY is not configured")
+
+
+# OpenRouter exposes an OpenAI-compatible API, so we reuse LangChain's
+# ChatOpenAI client and just point it at the OpenRouter base URL.
+chat_model = ChatOpenAI(
+    model=OPENROUTER_MODEL,
+    api_key=OPENROUTER_API_KEY,
+    base_url=OPENROUTER_BASE_URL,
+    temperature=0.0,
+)
+
+embeddings = OpenAIEmbeddings(
+    model=EMBEDDING_MODEL,
+    api_key=OPENAI_API_KEY,
+)
+
+pinecone_client = Pinecone(api_key=PINECONE_API_KEY)
+pinecone_index = pinecone_client.Index(PINECONE_INDEX_NAME)
