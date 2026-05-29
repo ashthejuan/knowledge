@@ -1,4 +1,3 @@
-import json
 import logging
 import re
 import uuid
@@ -10,6 +9,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.core.celery_app import celery_app
 from app.db.session import SessionLocal
 from app.models.document import Document
+from app.services.graph.workflow import ingestion_pipeline
 from app.services.storage import download_file_from_s3, upload_json_to_s3
 
 
@@ -79,12 +79,20 @@ def process_document_task(document_id: str) -> None:
             )
             chunks = splitter.split_text(extracted_text)
 
+            initial_state = {
+                "document_id": str(document_id),
+                "text_chunks": chunks,
+            }
+            final_state = ingestion_pipeline.invoke(initial_state)
+
             processed_key = f"processed/{document_id}_chunks.json"
             upload_json_to_s3(
                 object_key=processed_key,
                 payload={"document_id": document_id, "chunks": chunks},
             )
 
+            document.summary = final_state["summary"]
+            document.contextual_analysis = final_state["contextual_analysis"]
             document.status = "completed"
             db.commit()
         except Exception:
