@@ -16,6 +16,12 @@ OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL")
 # so we must embed both ingested chunks and queries with the same model.
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
+LLM_REQUEST_TIMEOUT_SECONDS = float(os.getenv("LLM_REQUEST_TIMEOUT_SECONDS", "60"))
+LLM_MAX_RETRIES = int(os.getenv("LLM_MAX_RETRIES", "3"))
+EMBEDDING_REQUEST_TIMEOUT_SECONDS = float(
+    os.getenv("EMBEDDING_REQUEST_TIMEOUT_SECONDS", "60")
+)
+EMBEDDING_MAX_RETRIES = int(os.getenv("EMBEDDING_MAX_RETRIES", "3"))
 
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "knowledge-base")
@@ -40,11 +46,15 @@ chat_model = ChatOpenAI(
     api_key=OPENROUTER_API_KEY,
     base_url=OPENROUTER_BASE_URL,
     temperature=0.0,
+    request_timeout=LLM_REQUEST_TIMEOUT_SECONDS,
+    max_retries=LLM_MAX_RETRIES,
 )
 
 embeddings = OpenAIEmbeddings(
     model=EMBEDDING_MODEL,
     api_key=OPENAI_API_KEY,
+    request_timeout=EMBEDDING_REQUEST_TIMEOUT_SECONDS,
+    max_retries=EMBEDDING_MAX_RETRIES,
 )
 
 pinecone_client = Pinecone(api_key=PINECONE_API_KEY)
