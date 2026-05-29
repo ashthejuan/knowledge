@@ -3,6 +3,7 @@ import time
 from collections.abc import Iterable
 from typing import Any
 
+import numpy as np
 from pinecone import PineconeApiException, ServiceException
 from tenacity import (
     before_sleep_log,
@@ -16,7 +17,7 @@ from app.services.graph.state import GraphState
 from app.services.llm import chat_model, embeddings, pinecone_index
 
 
-SUMMARY_CHUNK_LIMIT = 5
+SUMMARY_CHUNK_LIMIT = 10
 PINECONE_UPSERT_BATCH_SIZE = 100
 PINECONE_RETRY_ATTEMPTS = 3
 NO_RELATED_CONTEXT_ANALYSIS = "No related documents found in the knowledge base."
@@ -72,6 +73,35 @@ def _usage_metadata(response: Any) -> Any:
     return getattr(response, "usage_metadata", None)
 
 
+def _select_relevant_chunk_indices(
+    chunk_embeddings: list[list[float]], limit: int
+) -> list[int]:
+    """Return indices of the ``limit`` chunks most representative of the document.
+
+    There is no search query at summarization time, so "most relevant" is
+    interpreted as "closest to the document's semantic center": we score each
+    chunk by cosine similarity to the centroid of all chunk embeddings and keep
+    the top ``limit``. Selected indices are returned in original document order
+    so the resulting summary input stays coherent.
+    """
+    count = len(chunk_embeddings)
+    if count <= limit:
+        return list(range(count))
+
+    matrix = np.asarray(chunk_embeddings, dtype=np.float64)
+    centroid = matrix.mean(axis=0)
+    centroid_norm = float(np.linalg.norm(centroid))
+    chunk_norms = np.linalg.norm(matrix, axis=1)
+
+    denominator = chunk_norms * centroid_norm
+    scores = np.zeros(count, dtype=np.float64)
+    nonzero = denominator > 0
+    scores[nonzero] = (matrix[nonzero] @ centroid) / denominator[nonzero]
+
+    top_indices = np.argsort(scores)[-limit:]
+    return sorted(int(index) for index in top_indices)
+
+
 def _require_text_chunks(state: GraphState, node_name: str) -> list[str]:
     text_chunks = state.get("text_chunks", [])
     if not text_chunks:
@@ -123,8 +153,32 @@ def _query_similar_chunks(summary_embedding: list[float], document_id: str) -> A
 
 
 def summarize_document(state: GraphState) -> GraphState:
+    document_id = state["document_id"]
     text_chunks = _require_text_chunks(state, "summarize_document")
-    chunks_for_summary = text_chunks[:SUMMARY_CHUNK_LIMIT]
+
+    try:
+        embedding_started_at = time.perf_counter()
+        chunk_embeddings = embeddings.embed_documents(text_chunks)
+    except Exception:
+        logger.exception(
+            "failed to embed document chunks for summary selection",
+            extra={"document_id": document_id, "chunk_count": len(text_chunks)},
+        )
+        raise
+
+    logger.info(
+        "embedded document chunks for summary selection",
+        extra={
+            "document_id": document_id,
+            "chunk_count": len(text_chunks),
+            "latency_seconds": round(time.perf_counter() - embedding_started_at, 3),
+        },
+    )
+
+    selected_indices = _select_relevant_chunk_indices(
+        chunk_embeddings, SUMMARY_CHUNK_LIMIT
+    )
+    chunks_for_summary = [text_chunks[index] for index in selected_indices]
     text = "\n\n".join(chunks_for_summary)
 
     try:
@@ -142,14 +196,14 @@ def summarize_document(state: GraphState) -> GraphState:
     except Exception:
         logger.exception(
             "failed to summarize document",
-            extra={"document_id": state["document_id"]},
+            extra={"document_id": document_id},
         )
         raise
 
     logger.info(
         "summarized document",
         extra={
-            "document_id": state["document_id"],
+            "document_id": document_id,
             "chunk_count": len(text_chunks),
             "chunks_summarized": len(chunks_for_summary),
             "latency_seconds": round(time.perf_counter() - started_at, 3),
@@ -160,6 +214,7 @@ def summarize_document(state: GraphState) -> GraphState:
     return {
         **state,
         "summary": _message_content_as_text(response.content),
+        "chunk_embeddings": chunk_embeddings,
     }
 
 
@@ -169,24 +224,32 @@ def embed_and_store(state: GraphState) -> GraphState:
 
     vectors: list[dict[str, Any]] = []
 
-    try:
-        embedding_started_at = time.perf_counter()
-        chunk_embeddings = embeddings.embed_documents(text_chunks)
-    except Exception:
-        logger.exception(
-            "failed to embed document chunks",
+    cached_embeddings = state.get("chunk_embeddings")
+    if cached_embeddings and len(cached_embeddings) == len(text_chunks):
+        chunk_embeddings = cached_embeddings
+        logger.info(
+            "reused cached chunk embeddings from summarize_document",
             extra={"document_id": document_id, "chunk_count": len(text_chunks)},
         )
-        raise
+    else:
+        try:
+            embedding_started_at = time.perf_counter()
+            chunk_embeddings = embeddings.embed_documents(text_chunks)
+        except Exception:
+            logger.exception(
+                "failed to embed document chunks",
+                extra={"document_id": document_id, "chunk_count": len(text_chunks)},
+            )
+            raise
 
-    logger.info(
-        "embedded document chunks",
-        extra={
-            "document_id": document_id,
-            "chunk_count": len(text_chunks),
-            "latency_seconds": round(time.perf_counter() - embedding_started_at, 3),
-        },
-    )
+        logger.info(
+            "embedded document chunks",
+            extra={
+                "document_id": document_id,
+                "chunk_count": len(text_chunks),
+                "latency_seconds": round(time.perf_counter() - embedding_started_at, 3),
+            },
+        )
     vectors.extend(
         {
             "id": f"{document_id}_chunk_{index}",
