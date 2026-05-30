@@ -13,6 +13,7 @@ from tenacity import (
     wait_exponential,
 )
 
+from app.models.graph_extraction import KnowledgeGraphExtraction
 from app.services.graph.state import GraphState
 from app.services.llm import chat_model, embeddings, pinecone_index
 
@@ -120,6 +121,15 @@ def _require_summary(state: GraphState, node_name: str) -> str:
     return summary
 
 
+def _graph_extraction_input(state: GraphState) -> str:
+    summary = state.get("summary", "")
+    if summary:
+        return summary
+
+    text_chunks = _require_text_chunks(state, "extract_graph_elements")
+    return "\n\n".join(text_chunks[:SUMMARY_CHUNK_LIMIT])
+
+
 @retry(
     stop=stop_after_attempt(PINECONE_RETRY_ATTEMPTS),
     wait=wait_exponential(multiplier=1, min=1, max=8),
@@ -215,6 +225,47 @@ def summarize_document(state: GraphState) -> GraphState:
         **state,
         "summary": _message_content_as_text(response.content),
         "chunk_embeddings": chunk_embeddings,
+    }
+
+
+def extract_graph_elements(state: GraphState) -> GraphState:
+    document_id = state["document_id"]
+    text = _graph_extraction_input(state)
+    structured_llm = chat_model.with_structured_output(KnowledgeGraphExtraction)
+
+    try:
+        started_at = time.perf_counter()
+        extracted_graph_data = structured_llm.invoke(
+            [
+                (
+                    "system",
+                    "Extract all key technical concepts, entities, and explicit "
+                    "structural relationships from the following text summary. "
+                    "Maintain extreme consistency with entity naming.",
+                ),
+                ("user", text),
+            ]
+        )
+    except Exception:
+        logger.exception(
+            "failed to extract graph elements",
+            extra={"document_id": document_id},
+        )
+        raise
+
+    logger.info(
+        "extracted graph elements",
+        extra={
+            "document_id": document_id,
+            "entity_count": len(extracted_graph_data.entities),
+            "relationship_count": len(extracted_graph_data.relationships),
+            "latency_seconds": round(time.perf_counter() - started_at, 3),
+        },
+    )
+
+    return {
+        **state,
+        "extracted_graph_data": extracted_graph_data,
     }
 
 
