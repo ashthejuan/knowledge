@@ -183,3 +183,45 @@ def write_triples_to_neo4j(
             "relationship_count": relationship_count,
         },
     )
+
+
+def fetch_subgraph(limit: int = 100) -> dict[str, list[dict[str, str]]]:
+    """Return a deduplicated node/link payload for frontend graph renderers."""
+    driver = get_neo4j_driver()
+    query = """
+    MATCH (s)-[r]->(t)
+    RETURN s.name AS source_name, type(r) AS relationship_type, t.name AS target_name
+    LIMIT $limit
+    """
+
+    nodes_by_id: dict[str, dict[str, str]] = {}
+    links: list[dict[str, str]] = []
+
+    with driver.session() as session:
+        result = session.run(query, limit=limit)
+        for record in result:
+            source_name = record["source_name"]
+            target_name = record["target_name"]
+            relationship_type = record["relationship_type"]
+
+            if source_name:
+                nodes_by_id.setdefault(
+                    source_name,
+                    {"id": source_name, "name": source_name},
+                )
+            if target_name:
+                nodes_by_id.setdefault(
+                    target_name,
+                    {"id": target_name, "name": target_name},
+                )
+
+            if source_name and target_name:
+                links.append(
+                    {
+                        "source": source_name,
+                        "target": target_name,
+                        "type": relationship_type,
+                    }
+                )
+
+    return {"nodes": list(nodes_by_id.values()), "links": links}
