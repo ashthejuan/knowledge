@@ -1,9 +1,25 @@
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.ingest import router as ingest_router
+from app.services.graph_db_service import ensure_graph_constraints
 
-app = FastAPI(title="AI Knowledge Platform API", version="1.0")
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        ensure_graph_constraints()
+    except Exception:
+        logger.exception("failed to ensure Neo4j graph constraints on startup")
+    yield
+
+
+app = FastAPI(title="AI Knowledge Platform API", version="1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
