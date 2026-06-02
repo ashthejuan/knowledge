@@ -15,6 +15,18 @@ REFINE_QUERY_PROMPT = (
     "intent without changing the meaning."
 )
 
+GENERATE_ANSWER_PROMPT = """You are an expert research assistant. Answer the user's query using the retrieved context provided below.
+
+VECTOR CONTEXT (Semantic Chunks):
+{vector_context}
+
+GRAPH CONTEXT (Structural Relationships):
+{graph_context}
+
+USER QUERY: {query}
+
+Synthesize an explicit, technically accurate answer. If the graph context reveals direct links or dependencies between concepts, highlight them."""
+
 
 def _message_content_as_text(content: Any) -> str:
     if isinstance(content, str):
@@ -43,6 +55,17 @@ def _format_chat_history(chat_history: List[Dict[str, str]]) -> str:
         lines.append(f"{role}: {content}")
 
     return "\n".join(lines)
+
+
+def _format_context_items(items: List[str]) -> str:
+    cleaned_items = [item.strip() for item in items if item.strip()]
+    if not cleaned_items:
+        return "No context retrieved."
+
+    return "\n\n".join(
+        f"{index}. {item}"
+        for index, item in enumerate(cleaned_items, start=1)
+    )
 
 
 def _match_metadata(match: Any) -> dict[str, Any]:
@@ -153,4 +176,18 @@ def retrieve_graph(state: ChatState) -> dict[str, list[str]]:
 
     return {
         "graph_context": relationships,
+    }
+
+
+def generate_answer(state: ChatState) -> dict[str, str]:
+    prompt = GENERATE_ANSWER_PROMPT.format(
+        vector_context=_format_context_items(state.get("vector_context", [])),
+        graph_context=_format_context_items(state.get("graph_context", [])),
+        query=state["query"],
+    )
+
+    response = chat_model.invoke(prompt)
+
+    return {
+        "response": _message_content_as_text(response.content).strip(),
     }
