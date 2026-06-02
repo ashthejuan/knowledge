@@ -26,6 +26,13 @@ class IngestResponse(BaseModel):
     status: str
 
 
+class IngestStatusResponse(BaseModel):
+    id: uuid.UUID
+    status: str
+    source_type: str
+    filename: str | None = None
+
+
 @router.post(
     "/pdf",
     response_model=IngestResponse,
@@ -68,6 +75,27 @@ def ingest_pdf(file: PdfUpload, db: DbSession) -> IngestResponse:
     process_document_task.delay(str(document_id))
 
     return IngestResponse(document_id=document_id, status="processing_queued")
+
+
+@router.get(
+    "/status/{document_id}",
+    response_model=IngestStatusResponse,
+)
+def get_ingest_status(document_id: uuid.UUID, db: DbSession) -> IngestStatusResponse:
+    document = db.query(Document).filter(Document.id == document_id).first()
+
+    if document is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    return IngestStatusResponse(
+        id=document.id,
+        status=document.status,
+        source_type=document.source_type,
+        filename=document.filename,
+    )
 
 
 @router.post(
