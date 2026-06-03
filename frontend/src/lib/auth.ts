@@ -17,6 +17,36 @@ type BackendLoginResponse = BackendUser & {
   access_token: string;
 };
 
+type NextAuthLogMetadata =
+  | Error
+  | {
+      error?: Error;
+      message?: string;
+      [key: string]: unknown;
+    };
+
+function getAuthLogMessage(metadata: NextAuthLogMetadata): string {
+  if (metadata instanceof Error) {
+    return metadata.message;
+  }
+
+  if (metadata.error instanceof Error) {
+    return metadata.error.message;
+  }
+
+  return typeof metadata.message === "string" ? metadata.message : "";
+}
+
+function isStaleSessionCookieError(
+  code: string,
+  metadata: NextAuthLogMetadata
+): boolean {
+  return (
+    code === "JWT_SESSION_ERROR" &&
+    getAuthLogMessage(metadata).includes("decryption operation failed")
+  );
+}
+
 function requireNextAuthSecret(): string {
   if (NEXTAUTH_SECRET) {
     return NEXTAUTH_SECRET;
@@ -69,6 +99,20 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   pages: {
     signIn: "/signin",
+  },
+  logger: {
+    error(code, metadata) {
+      if (isStaleSessionCookieError(code, metadata)) {
+        return;
+      }
+
+      console.error(
+        `[next-auth][error][${code}]`,
+        `\nhttps://next-auth.js.org/errors#${code.toLowerCase()}`,
+        getAuthLogMessage(metadata),
+        metadata
+      );
+    },
   },
   providers: [
     GoogleProvider({

@@ -215,8 +215,16 @@ def fetch_subgraph(user_id: str, limit: int = 100) -> dict[str, list[dict[str, s
     """
     driver = get_neo4j_driver()
     query = """
-    MATCH (s {user_id: $user_id})-[r]->(t {user_id: $user_id})
-    RETURN s.name AS source_name, type(r) AS relationship_type, t.name AS target_name
+    MATCH (s)-[r]->(t)
+    WHERE s.user_id = $user_id AND t.user_id = $user_id
+    RETURN
+        coalesce(s.name, s.id) AS source_id,
+        coalesce(t.name, t.id) AS target_id,
+        coalesce(s.name, s.id) AS source_label,
+        coalesce(t.name, t.id) AS target_label,
+        coalesce(s.type, head(labels(s))) AS source_type,
+        coalesce(t.type, head(labels(t))) AS target_type,
+        coalesce(r.predicate, type(r)) AS relationship_label
     LIMIT $limit
     """
 
@@ -226,27 +234,39 @@ def fetch_subgraph(user_id: str, limit: int = 100) -> dict[str, list[dict[str, s
     with driver.session() as session:
         result = session.run(query, user_id=user_id, limit=limit)
         for record in result:
-            source_name = record["source_name"]
-            target_name = record["target_name"]
-            relationship_type = record["relationship_type"]
+            source_id = record["source_id"]
+            target_id = record["target_id"]
+            source_label = record["source_label"]
+            target_label = record["target_label"]
+            source_type = record["source_type"]
+            target_type = record["target_type"]
+            relationship_label = record["relationship_label"]
 
-            if source_name:
+            if source_id:
                 nodes_by_id.setdefault(
-                    source_name,
-                    {"id": source_name, "name": source_name},
+                    source_id,
+                    {
+                        "id": source_id,
+                        "label": source_label or source_id,
+                        "type": source_type or "Entity",
+                    },
                 )
-            if target_name:
+            if target_id:
                 nodes_by_id.setdefault(
-                    target_name,
-                    {"id": target_name, "name": target_name},
+                    target_id,
+                    {
+                        "id": target_id,
+                        "label": target_label or target_id,
+                        "type": target_type or "Entity",
+                    },
                 )
 
-            if source_name and target_name:
+            if source_id and target_id:
                 links.append(
                     {
-                        "source": source_name,
-                        "target": target_name,
-                        "type": relationship_type,
+                        "source": source_id,
+                        "target": target_id,
+                        "label": relationship_label,
                     }
                 )
 

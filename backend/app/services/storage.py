@@ -58,6 +58,11 @@ def download_file_from_s3(object_key: str) -> bytes:
     return response["Body"].read()
 
 
+def delete_file_from_s3(object_key: str) -> None:
+    """Delete an object from the tenant-scoped document bucket if it exists."""
+    s3_client.delete_object(Bucket=S3_BUCKET_NAME, Key=object_key)
+
+
 def upload_json_to_s3(object_key: str, payload: dict) -> str:
     s3_client.put_object(
         Bucket=S3_BUCKET_NAME,

@@ -20,6 +20,10 @@ from app.services.storage import (
 logger = logging.getLogger(__name__)
 
 
+class DocumentProcessingCancelled(Exception):
+    """Raised when a user cancels a document while it is being processed."""
+
+
 def _normalize_text(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
@@ -42,6 +46,12 @@ def _extract_url_text(url: str) -> str:
         raise ValueError(f"Unable to extract article text from URL: {url}")
 
     return _normalize_text(extracted)
+
+
+def _raise_if_cancelled(db, document_uuid: uuid.UUID) -> None:
+    document = db.get(Document, document_uuid)
+    if document is None or document.status == "cancelled":
+        raise DocumentProcessingCancelled()
 
 
 @celery_app.task(name="app.services.tasks.process_document_task")
@@ -69,10 +79,16 @@ def process_document_task(document_id: str, user_id: str) -> None:
             logger.info("Document %s has already been processed", document_id)
             return
 
+        if document.status == "cancelled":
+            logger.info("Document %s was cancelled before processing", document_id)
+            return
+
         document.status = "processing"
         db.commit()
 
         try:
+            _raise_if_cancelled(db, document_uuid)
+
             if document.source_type == "pdf":
                 if not document.s3_key:
                     raise ValueError(f"PDF document {document_id} is missing an S3 key")
@@ -93,12 +109,16 @@ def process_document_task(document_id: str, user_id: str) -> None:
             )
             chunks = splitter.split_text(extracted_text)
 
+            _raise_if_cancelled(db, document_uuid)
+
             initial_state = {
                 "document_id": str(document_id),
                 "user_id": user_id,
                 "text_chunks": chunks,
             }
             final_state = ingestion_pipeline.invoke(initial_state)
+
+            _raise_if_cancelled(db, document_uuid)
 
             processed_key = build_processed_key(user_id, str(document_id))
             upload_json_to_s3(
@@ -110,6 +130,13 @@ def process_document_task(document_id: str, user_id: str) -> None:
             document.contextual_analysis = final_state["contextual_analysis"]
             document.status = "completed"
             db.commit()
+        except DocumentProcessingCancelled:
+            logger.info("Stopped processing cancelled document %s", document_id)
+            db.rollback()
+            document = db.get(Document, document_uuid)
+            if document is not None:
+                document.status = "cancelled"
+                db.commit()
         except Exception:
             logger.exception("Failed to process document %s", document_id)
             db.rollback()

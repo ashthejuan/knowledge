@@ -14,13 +14,16 @@ from tenacity import (
 )
 
 from app.models.graph_extraction import KnowledgeGraphExtraction
+from app.services.graph_db_service import write_triples_to_neo4j
 from app.services.graph.state import GraphState
-from app.services.llm import chat_model, embeddings, pinecone_index
+from app.services.llm import embeddings, graph_chat_model, pinecone_index
 
 
 SUMMARY_CHUNK_LIMIT = 10
 PINECONE_UPSERT_BATCH_SIZE = 100
 PINECONE_RETRY_ATTEMPTS = 3
+LLM_RETRY_ATTEMPTS = 3
+TRANSIENT_LLM_ERROR_CODES = {408, 429, 500, 502, 503, 504}
 NO_RELATED_CONTEXT_ANALYSIS = "No related documents found in the knowledge base."
 CONTEXTUAL_ANALYSIS_UNAVAILABLE = (
     "Contextual analysis is unavailable because cross-referencing failed."
@@ -57,6 +60,21 @@ def _is_transient_pinecone_error(exception: BaseException) -> bool:
     if isinstance(exception, PineconeApiException):
         status = getattr(exception, "status", None)
         return status == 429 or (isinstance(status, int) and status >= 500)
+
+    return False
+
+
+def _is_transient_llm_error(exception: BaseException) -> bool:
+    if isinstance(exception, (ConnectionError, TimeoutError)):
+        return True
+
+    payload = exception.args[0] if exception.args else None
+    if isinstance(payload, dict):
+        code = payload.get("code") or payload.get("status")
+        try:
+            return int(code) in TRANSIENT_LLM_ERROR_CODES
+        except (TypeError, ValueError):
+            return False
 
     return False
 
@@ -131,6 +149,28 @@ def _graph_extraction_input(state: GraphState) -> str:
 
 
 @retry(
+    stop=stop_after_attempt(LLM_RETRY_ATTEMPTS),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    retry=retry_if_exception(_is_transient_llm_error),
+    reraise=True,
+    before_sleep=before_sleep_log(logger, logging.WARNING),
+)
+def _extract_graph_data_with_retry(text: str) -> KnowledgeGraphExtraction:
+    structured_llm = graph_chat_model.with_structured_output(KnowledgeGraphExtraction)
+    return structured_llm.invoke(
+        [
+            (
+                "system",
+                "Extract all key technical concepts, entities, and explicit "
+                "structural relationships from the following text summary. "
+                "Maintain extreme consistency with entity naming.",
+            ),
+            ("user", text),
+        ]
+    )
+
+
+@retry(
     stop=stop_after_attempt(PINECONE_RETRY_ATTEMPTS),
     wait=wait_exponential(multiplier=1, min=1, max=8),
     retry=retry_if_exception(_is_transient_pinecone_error),
@@ -198,7 +238,7 @@ def summarize_document(state: GraphState) -> GraphState:
 
     try:
         started_at = time.perf_counter()
-        response = chat_model.invoke(
+        response = graph_chat_model.invoke(
             [
                 (
                     "system",
@@ -236,21 +276,10 @@ def summarize_document(state: GraphState) -> GraphState:
 def extract_graph_elements(state: GraphState) -> GraphState:
     document_id = state["document_id"]
     text = _graph_extraction_input(state)
-    structured_llm = chat_model.with_structured_output(KnowledgeGraphExtraction)
 
     try:
         started_at = time.perf_counter()
-        extracted_graph_data = structured_llm.invoke(
-            [
-                (
-                    "system",
-                    "Extract all key technical concepts, entities, and explicit "
-                    "structural relationships from the following text summary. "
-                    "Maintain extreme consistency with entity naming.",
-                ),
-                ("user", text),
-            ]
-        )
+        extracted_graph_data = _extract_graph_data_with_retry(text)
     except Exception:
         logger.exception(
             "failed to extract graph elements",
@@ -272,6 +301,28 @@ def extract_graph_elements(state: GraphState) -> GraphState:
         **state,
         "extracted_graph_data": extracted_graph_data,
     }
+
+
+def persist_graph_elements(state: GraphState) -> GraphState:
+    document_id = state["document_id"]
+    user_id = state["user_id"]
+    extracted_graph_data = state.get("extracted_graph_data")
+    if extracted_graph_data is None:
+        raise ValueError(
+            "persist_graph_elements requires 'extracted_graph_data'; "
+            "ensure extract_graph_elements ran first"
+        )
+
+    try:
+        write_triples_to_neo4j(document_id, user_id, extracted_graph_data)
+    except Exception:
+        logger.exception(
+            "failed to persist graph elements to Neo4j",
+            extra={"document_id": document_id},
+        )
+        raise
+
+    return state
 
 
 def embed_and_store(state: GraphState) -> GraphState:
@@ -453,7 +504,7 @@ def cross_reference(state: GraphState) -> GraphState:
 
     try:
         analysis_started_at = time.perf_counter()
-        response = chat_model.invoke(
+        response = graph_chat_model.invoke(
             [
                 (
                     "system",

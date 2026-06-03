@@ -1,6 +1,6 @@
 .env
 .env.local
-/frontend/.env.local
+/frontend/.env
 .agents/*
 .cursor/*
 /backend/venv/*

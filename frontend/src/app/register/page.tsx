@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,15 @@ function getErrorMessage(body: RegisterResponse, status: number): string {
   return "Registration failed. Please try again.";
 }
 
+function ButtonLoader() {
+  return (
+    <span
+      aria-hidden="true"
+      className="mr-2 size-4 animate-spin rounded-full border-2 border-white/35 border-t-white"
+    />
+  );
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -32,10 +41,12 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isNavigating, startTransition] = useTransition();
   const [oauthProvider, setOauthProvider] = useState<"google" | "github" | null>(
     null
   );
   const [error, setError] = useState<string | null>(null);
+  const isLoading = isSubmitting || isNavigating;
 
   function handleOAuthSignIn(provider: "google" | "github") {
     setError(null);
@@ -47,6 +58,7 @@ export default function RegisterPage() {
     event.preventDefault();
     setError(null);
     setIsSubmitting(true);
+    let keepLoading = false;
 
     try {
       const response = await fetch("/api/register", {
@@ -72,13 +84,19 @@ export default function RegisterPage() {
 
       if (signInResult?.error) {
         toast.success("Account created. Sign in to continue.");
-        router.push("/signin");
+        keepLoading = true;
+        startTransition(() => {
+          router.push("/signin");
+        });
         return;
       }
 
       toast.success("Account created. Welcome to your knowledge base.");
-      router.push("/dashboard");
-      router.refresh();
+      keepLoading = true;
+      startTransition(() => {
+        router.push("/dashboard");
+        router.refresh();
+      });
     } catch (caughtError) {
       const message =
         caughtError instanceof Error
@@ -86,7 +104,9 @@ export default function RegisterPage() {
           : "Registration failed. Please try again.";
       setError(message);
     } finally {
-      setIsSubmitting(false);
+      if (!keepLoading) {
+        setIsSubmitting(false);
+      }
     }
   }
 
@@ -143,6 +163,7 @@ export default function RegisterPage() {
         <div className="flex items-center justify-center px-6 pb-10 sm:px-10 lg:min-h-screen lg:p-12">
           <form
             onSubmit={handleSubmit}
+            aria-busy={isLoading}
             className="w-full max-w-md rounded-[2rem] border border-white/70 bg-white/78 p-6 shadow-2xl shadow-[#315b40]/10 backdrop-blur-xl sm:p-8"
           >
             <div className="mb-8">
@@ -160,7 +181,7 @@ export default function RegisterPage() {
               <Button
                 type="button"
                 variant="outline"
-                disabled={isSubmitting || oauthProvider !== null}
+                disabled={isLoading || oauthProvider !== null}
                 onClick={() => handleOAuthSignIn("google")}
                 className="h-12 rounded-xl border-[#d6cdbd] bg-white/75 text-sm font-semibold text-[#26332a] hover:bg-white"
               >
@@ -192,7 +213,7 @@ export default function RegisterPage() {
               <Button
                 type="button"
                 variant="outline"
-                disabled={isSubmitting || oauthProvider !== null}
+                disabled={isLoading || oauthProvider !== null}
                 onClick={() => handleOAuthSignIn("github")}
                 className="h-12 rounded-xl border-[#d6cdbd] bg-[#18221b] text-sm font-semibold text-white hover:bg-[#26332a]"
               >
@@ -222,6 +243,7 @@ export default function RegisterPage() {
                 </span>
                 <Input
                   value={name}
+                  disabled={isLoading}
                   onChange={(event) => setName(event.target.value)}
                   placeholder="Ada Lovelace"
                   className="h-12 rounded-xl border-[#d6cdbd] bg-white/80 px-4 text-sm"
@@ -236,6 +258,7 @@ export default function RegisterPage() {
                   required
                   type="email"
                   value={email}
+                  disabled={isLoading}
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="you@example.com"
                   className="h-12 rounded-xl border-[#d6cdbd] bg-white/80 px-4 text-sm"
@@ -252,6 +275,7 @@ export default function RegisterPage() {
                     minLength={8}
                     type={showPassword ? "text" : "password"}
                     value={password}
+                    disabled={isLoading}
                     onChange={(event) => setPassword(event.target.value)}
                     placeholder="At least 8 characters"
                     className="h-12 rounded-xl border-[#d6cdbd] bg-white/80 px-4 pr-20 text-sm"
@@ -262,8 +286,9 @@ export default function RegisterPage() {
                       showPassword ? "Hide password" : "Show password"
                     }
                     aria-pressed={showPassword}
+                    disabled={isLoading}
                     onClick={() => setShowPassword((current) => !current)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-3 py-1.5 text-xs font-semibold text-[#315b40] transition hover:bg-[#315b40]/10"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-3 py-1.5 text-xs font-semibold text-[#315b40] transition hover:bg-[#315b40]/10 disabled:pointer-events-none disabled:opacity-50"
                   >
                     {showPassword ? "Hide" : "View"}
                   </button>
@@ -279,10 +304,17 @@ export default function RegisterPage() {
 
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isLoading}
               className="mt-6 h-12 w-full rounded-xl bg-[#315b40] text-sm font-semibold text-white shadow-lg shadow-[#315b40]/20 hover:bg-[#254833]"
             >
-              {isSubmitting ? "Creating account..." : "Create account"}
+              {isLoading ? (
+                <>
+                  <ButtonLoader />
+                  Creating account...
+                </>
+              ) : (
+                "Create account"
+              )}
             </Button>
 
             <p className="mt-5 text-center text-sm text-[#647067]">

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   PaperPlaneRight,
   Robot,
@@ -190,10 +192,10 @@ function MessageBubble({
 
       <div
         className={cn(
-          "flex max-w-[80%] flex-col gap-2 rounded-lg px-3 py-2 text-sm",
+          "flex max-w-[88%] flex-col gap-2 rounded-lg px-3 py-2 text-sm",
           isUser
             ? "bg-primary text-primary-foreground"
-            : "bg-secondary text-secondary-foreground"
+            : "border bg-card text-card-foreground shadow-sm"
         )}
       >
         {isStreaming ? (
@@ -203,7 +205,7 @@ function MessageBubble({
           </span>
         ) : (
           message.content && (
-            <p className="whitespace-pre-wrap wrap-break-word">{message.content}</p>
+            <MessageContent content={message.content} isUser={isUser} />
           )
         )}
 
@@ -217,4 +219,110 @@ function MessageBubble({
       </div>
     </div>
   );
+}
+
+function MessageContent({
+  content,
+  isUser,
+}: {
+  content: string;
+  isUser: boolean;
+}) {
+  if (isUser) {
+    return <p className="whitespace-pre-wrap break-words">{content}</p>;
+  }
+
+  return (
+    <div className="flex flex-col gap-3 overflow-hidden break-words">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          h1: ({ children }) => (
+            <h1 className="mt-3 text-xl font-semibold first:mt-0">
+              {children}
+            </h1>
+          ),
+          h2: ({ children }) => (
+            <h2 className="mt-3 text-lg font-semibold first:mt-0">
+              {children}
+            </h2>
+          ),
+          h3: ({ children }) => (
+            <h3 className="mt-3 text-base font-semibold first:mt-0">
+              {children}
+            </h3>
+          ),
+          p: ({ children }) => <p className="leading-6">{children}</p>,
+          ul: ({ children }) => (
+            <ul className="ml-5 list-disc marker:text-muted-foreground">
+              {children}
+            </ul>
+          ),
+          ol: ({ children }) => (
+            <ol className="ml-5 list-decimal marker:text-muted-foreground">
+              {children}
+            </ol>
+          ),
+          li: ({ children }) => <li className="my-1 leading-6">{children}</li>,
+          a: ({ children, href }) => (
+            <a
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-primary underline underline-offset-4"
+            >
+              {children}
+            </a>
+          ),
+          code: ({ children, className }) => {
+            const isBlock = Boolean(className);
+
+            return isBlock ? (
+              <code className={cn("block overflow-x-auto", className)}>
+                {children}
+              </code>
+            ) : (
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-[0.85em]">
+                {children}
+              </code>
+            );
+          },
+          pre: ({ children }) => (
+            <pre className="overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs leading-5">
+              {children}
+            </pre>
+          ),
+          blockquote: ({ children }) => (
+            <blockquote className="border-l-2 border-border pl-3 text-muted-foreground">
+              {children}
+            </blockquote>
+          ),
+          hr: () => <div className="my-3 h-px bg-border" />,
+          table: ({ children }) => (
+            <div className="my-2 overflow-x-auto rounded-md border">
+              <table className="w-full border-collapse text-left text-xs">
+                {children}
+              </table>
+            </div>
+          ),
+          th: ({ children }) => (
+            <th className="border-b bg-muted px-3 py-2 font-semibold">
+              {children}
+            </th>
+          ),
+          td: ({ children }) => (
+            <td className="border-b px-3 py-2 align-top leading-5">
+              {children}
+            </td>
+          ),
+        }}
+      >
+        {normalizeMarkdown(content)}
+      </ReactMarkdown>
+    </div>
+  );
+}
+
+function normalizeMarkdown(content: string): string {
+  return content.replace(/<br\s*\/?>/gi, "  \n");
 }

@@ -15,6 +15,7 @@ OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL")
 # Pinecone index was created with OpenAI text-embedding-3-small (1536 dims),
 # so we must embed both ingested chunks and queries with the same model.
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
 LLM_REQUEST_TIMEOUT_SECONDS = float(os.getenv("LLM_REQUEST_TIMEOUT_SECONDS", "60"))
 LLM_MAX_RETRIES = int(os.getenv("LLM_MAX_RETRIES", "3"))
@@ -45,6 +46,16 @@ chat_model = ChatOpenAI(
     model=OPENROUTER_MODEL,
     api_key=OPENROUTER_API_KEY,
     base_url=OPENROUTER_BASE_URL,
+    temperature=0.0,
+    request_timeout=LLM_REQUEST_TIMEOUT_SECONDS,
+    max_retries=LLM_MAX_RETRIES,
+)
+
+# Ingestion graph pipeline (summarize, structured extraction, cross-reference)
+# uses OpenAI directly for reliable structured output and lower latency.
+graph_chat_model = ChatOpenAI(
+    model=OPENAI_MODEL,
+    api_key=OPENAI_API_KEY,
     temperature=0.0,
     request_timeout=LLM_REQUEST_TIMEOUT_SECONDS,
     max_retries=LLM_MAX_RETRIES,

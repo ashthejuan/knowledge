@@ -14,7 +14,7 @@ pnpm dev
 bun dev
 ```
 
-Create `frontend/.env.local` before starting the dev server:
+Create `frontend/.env` before starting the dev server:
 
 ```bash
 NEXTAUTH_URL=http://localhost:3000

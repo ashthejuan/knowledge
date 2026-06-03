@@ -13,13 +13,14 @@ router = APIRouter(prefix="/api/graph", tags=["graph"])
 
 class GraphNode(BaseModel):
     id: str = Field(description="Unique node identifier for graph layout libraries")
-    name: str = Field(description="Display label for the node")
+    label: str = Field(description="Display label for the node")
+    type: str = Field(description="Node category used for graph grouping")
 
 
 class GraphLink(BaseModel):
     source: str = Field(description="Source node id")
     target: str = Field(description="Target node id")
-    type: str = Field(description="Relationship type between source and target")
+    label: str = Field(description="Relationship label between source and target")
 
 
 class SubgraphResponse(BaseModel):
