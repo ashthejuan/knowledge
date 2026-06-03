@@ -31,7 +31,7 @@ function ButtonLoader() {
   return (
     <span
       aria-hidden="true"
-      className="mr-2 size-4 animate-spin rounded-full border-2 border-white/35 border-t-white"
+      className="mr-2 size-4 animate-spin border-2 border-white/35 border-t-white"
     />
   );
 }
@@ -91,17 +91,17 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
       <form
         onSubmit={handleSubmit}
         aria-busy={isLoading}
-        className="relative z-10 w-full max-w-md rounded-[2rem] border border-white/70 bg-white/80 p-6 shadow-2xl shadow-[#315b40]/10 backdrop-blur-xl sm:p-8"
+        className="relative z-10 w-full max-w-md border border-white/70 bg-white/80 p-8 shadow-2xl shadow-[#315b40]/10 backdrop-blur-xl sm:p-10"
       >
         <Link
           href="/register"
-          className="mb-8 inline-flex rounded-full border border-[#18221b]/15 bg-white/55 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#315b40] shadow-sm backdrop-blur"
+          className="mb-8 inline-flex border border-[#18221b]/15 bg-white/55 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#315b40] shadow-sm backdrop-blur"
         >
           Knowledge Base
         </Link>
 
-        <div className="mb-8">
-          <div className="mb-4 h-1.5 w-16 rounded-full bg-[#315b40]" />
+        <div className="mb-10">
+          <div className="mb-5 h-1.5 w-16 bg-[#315b40]" />
           <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[#18221b]">
             Sign in
           </h1>
@@ -110,13 +110,13 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
           </p>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           <Button
             type="button"
             variant="outline"
             disabled={isLoading || oauthProvider !== null}
             onClick={() => handleOAuthSignIn("google")}
-            className="h-12 rounded-xl border-[#d6cdbd] bg-white/75 text-sm font-semibold text-[#26332a] hover:bg-white"
+            className="h-12 border-[#d6cdbd] bg-white/75 text-sm font-semibold text-[#26332a] hover:bg-white"
           >
             <svg aria-hidden="true" viewBox="0 0 24 24" className="mr-2 size-4">
               <path
@@ -144,7 +144,7 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
             variant="outline"
             disabled={isLoading || oauthProvider !== null}
             onClick={() => handleOAuthSignIn("github")}
-            className="h-12 rounded-xl border-[#d6cdbd] bg-[#18221b] text-sm font-semibold text-white hover:bg-[#26332a]"
+            className="h-12 border-[#d6cdbd] bg-[#18221b] text-sm font-semibold text-white hover:bg-[#26332a]"
           >
             <svg
               aria-hidden="true"
@@ -157,7 +157,7 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
           </Button>
         </div>
 
-        <div className="my-6 flex items-center gap-3">
+        <div className="my-8 flex items-center gap-4">
           <div className="h-px flex-1 bg-[#d6cdbd]" />
           <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#7a857d]">
             or
@@ -165,9 +165,9 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
           <div className="h-px flex-1 bg-[#d6cdbd]" />
         </div>
 
-        <div className="space-y-4">
+        <div className="flex flex-col gap-5">
           <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#526357]">
+            <span className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-[#526357]">
               Email
             </span>
             <Input
@@ -177,12 +177,12 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
               disabled={isLoading || oauthProvider !== null}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="you@example.com"
-              className="h-12 rounded-xl border-[#d6cdbd] bg-white/80 px-4 text-sm"
+              className="h-12 border-[#d6cdbd] bg-white/80 px-4 text-sm"
             />
           </label>
 
           <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#526357]">
+            <span className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-[#526357]">
               Password
             </span>
             <div className="relative">
@@ -194,7 +194,7 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
                 disabled={isLoading || oauthProvider !== null}
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder="At least 8 characters"
-                className="h-12 rounded-xl border-[#d6cdbd] bg-white/80 px-4 pr-20 text-sm"
+                className="h-12 border-[#d6cdbd] bg-white/80 px-4 pr-20 text-sm"
               />
               <button
                 type="button"
@@ -202,7 +202,7 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
                 aria-pressed={showPassword}
                 disabled={isLoading || oauthProvider !== null}
                 onClick={() => setShowPassword((current) => !current)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-3 py-1.5 text-xs font-semibold text-[#315b40] transition hover:bg-[#315b40]/10 disabled:pointer-events-none disabled:opacity-50"
+                className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 text-xs font-semibold text-[#315b40] transition hover:bg-[#315b40]/10 disabled:pointer-events-none disabled:opacity-50"
               >
                 {showPassword ? "Hide" : "View"}
               </button>
@@ -211,7 +211,7 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
         </div>
 
         {error ? (
-          <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mt-6 border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
             {error}
           </div>
         ) : null}
@@ -219,7 +219,7 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
         <Button
           type="submit"
           disabled={isLoading || oauthProvider !== null}
-          className="mt-6 h-12 w-full rounded-xl bg-[#315b40] text-sm font-semibold text-white shadow-lg shadow-[#315b40]/20 hover:bg-[#254833]"
+          className="mt-8 h-12 w-full bg-[#315b40] text-sm font-semibold text-white shadow-lg shadow-[#315b40]/20 hover:bg-[#254833]"
         >
           {isLoading ? (
             <>
@@ -231,7 +231,7 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
           )}
         </Button>
 
-        <p className="mt-5 text-center text-sm text-[#647067]">
+        <p className="mt-6 text-center text-sm text-[#647067]">
           Need an account?{" "}
           <Link
             href="/register"

@@ -199,11 +199,11 @@ export function IngestWizard() {
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="flex flex-col gap-6">
         <div
           role="tablist"
           aria-label="Ingestion source type"
-          className="grid grid-cols-2 gap-2 rounded-md bg-secondary/40 p-1"
+          className="grid grid-cols-2 gap-2 border border-[#d6cdbd] bg-white/45 p-1.5"
         >
           <Button
             role="tab"
@@ -229,8 +229,8 @@ export function IngestWizard() {
           <div
             {...getRootProps()}
             className={cn(
-              "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-input px-6 py-12 text-center transition-colors",
-              isDragActive && "border-ring bg-input/30",
+              "flex cursor-pointer flex-col items-center justify-center gap-3 border border-dashed border-[#d6cdbd] bg-white/45 px-8 py-16 text-center transition-colors",
+              isDragActive && "border-[#315b40] bg-[#315b40]/10",
               isSubmitting && "pointer-events-none opacity-50"
             )}
           >
@@ -247,8 +247,8 @@ export function IngestWizard() {
             </p>
           </div>
         ) : (
-          <form onSubmit={handleUrlSubmit} className="flex flex-col gap-4">
-            <div className="flex items-center gap-2">
+          <form onSubmit={handleUrlSubmit} className="flex flex-col gap-5">
+            <div className="flex items-center gap-3">
               <Input
                 type="url"
                 value={urlInput}
@@ -293,9 +293,9 @@ function PipelineMonitor({
   const copy = STATUS_COPY[status];
 
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-border bg-card px-3 py-3">
+    <div className="flex items-start gap-4 border border-[#d6cdbd] bg-white/60 px-5 py-4">
       <StatusIcon status={status} />
-      <div className="flex flex-col gap-0.5">
+      <div className="flex flex-col gap-1">
         <p className="text-sm font-medium text-foreground">{copy.title}</p>
         <p className="text-xs text-muted-foreground">{copy.description}</p>
         {docId && (

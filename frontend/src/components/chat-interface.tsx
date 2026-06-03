@@ -96,9 +96,9 @@ export function ChatInterface() {
   }
 
   return (
-    <Card className="flex h-[600px] flex-col">
+    <Card className="flex h-[640px] flex-col bg-white/78">
       <CardHeader className="border-b">
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-3">
           <Robot weight="duotone" className="size-4 text-primary" />
           Conversation
         </CardTitle>
@@ -106,10 +106,10 @@ export function ChatInterface() {
 
       <CardContent
         ref={viewportRef}
-        className="flex flex-1 flex-col gap-4 overflow-y-auto py-4"
+        className="flex flex-1 flex-col gap-5 overflow-y-auto"
       >
         {messages.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
             <Robot weight="duotone" className="size-8 text-muted-foreground" />
             <p className="text-sm font-medium text-foreground">
               Ask anything about your knowledge base
@@ -131,8 +131,8 @@ export function ChatInterface() {
         )}
       </CardContent>
 
-      <CardFooter className="border-t pt-4">
-        <form onSubmit={handleSubmit} className="flex w-full items-center gap-2">
+      <CardFooter className="border-t">
+        <form onSubmit={handleSubmit} className="flex w-full items-center gap-3">
           <Input
             value={input}
             onChange={(event) => setInput(event.target.value)}
@@ -171,16 +171,16 @@ function MessageBubble({
   return (
     <div
       className={cn(
-        "flex items-start gap-2",
+        "flex items-start gap-3",
         isUser ? "flex-row-reverse" : "flex-row"
       )}
     >
       <span
         className={cn(
-          "flex size-7 shrink-0 items-center justify-center rounded-full",
+          "flex size-7 shrink-0 items-center justify-center border",
           isUser
-            ? "bg-primary text-primary-foreground"
-            : "bg-secondary text-secondary-foreground"
+            ? "border-[#315b40] bg-[#315b40] text-white"
+            : "border-[#d6cdbd] bg-white/70 text-[#315b40]"
         )}
       >
         {isUser ? (
@@ -192,10 +192,10 @@ function MessageBubble({
 
       <div
         className={cn(
-          "flex max-w-[88%] flex-col gap-2 rounded-lg px-3 py-2 text-sm",
+          "flex max-w-[88%] flex-col gap-2 border px-4 py-3 text-sm shadow-sm",
           isUser
-            ? "bg-primary text-primary-foreground"
-            : "border bg-card text-card-foreground shadow-sm"
+            ? "border-[#315b40] bg-[#315b40] text-white"
+            : "border-[#d6cdbd] bg-white/72 text-[#18221b]"
         )}
       >
         {isStreaming ? (
@@ -229,11 +229,11 @@ function MessageContent({
   isUser: boolean;
 }) {
   if (isUser) {
-    return <p className="whitespace-pre-wrap break-words">{content}</p>;
+    return <p className="whitespace-pre-wrap wrap-break-word">{content}</p>;
   }
 
   return (
-    <div className="flex flex-col gap-3 overflow-hidden break-words">
+    <div className="flex flex-col gap-3 overflow-hidden wrap-break-word">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -282,13 +282,13 @@ function MessageContent({
                 {children}
               </code>
             ) : (
-              <code className="rounded bg-muted px-1 py-0.5 font-mono text-[0.85em]">
+              <code className="bg-white/70 px-1 py-0.5 font-mono text-[0.85em]">
                 {children}
               </code>
             );
           },
           pre: ({ children }) => (
-            <pre className="overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs leading-5">
+            <pre className="overflow-x-auto border border-[#d6cdbd] bg-white/70 p-3 font-mono text-xs leading-5">
               {children}
             </pre>
           ),
@@ -299,7 +299,7 @@ function MessageContent({
           ),
           hr: () => <div className="my-3 h-px bg-border" />,
           table: ({ children }) => (
-            <div className="my-2 overflow-x-auto rounded-md border">
+            <div className="my-2 overflow-x-auto border border-[#d6cdbd]">
               <table className="w-full border-collapse text-left text-xs">
                 {children}
               </table>

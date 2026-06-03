@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 
 import { IngestWizard } from "@/components/ingest-wizard";
+import {
+  WorkspacePage,
+  WorkspacePageHeader,
+} from "@/components/workspace-layout";
 import { requireAuth } from "@/lib/require-auth";
 
 export const metadata: Metadata = {
@@ -13,18 +17,14 @@ export default async function IngestPage() {
   await requireAuth("/ingest");
 
   return (
-    <div className="container mx-auto py-10 px-4 min-h-screen">
-      <header className="mb-8 flex flex-col gap-2">
-        <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">
-          Knowledge Capture
-        </h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Upload academic files or parse high-density URLs into your neural
-          graph index.
-        </p>
-      </header>
+    <WorkspacePage>
+      <WorkspacePageHeader
+        eyebrow="Source intake"
+        title="Knowledge Capture"
+        description="Upload academic files or parse high-density URLs into your neural graph index."
+      />
 
       <IngestWizard />
-    </div>
+    </WorkspacePage>
   );
 }

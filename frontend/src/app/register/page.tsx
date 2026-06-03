@@ -29,7 +29,7 @@ function ButtonLoader() {
   return (
     <span
       aria-hidden="true"
-      className="mr-2 size-4 animate-spin rounded-full border-2 border-white/35 border-t-white"
+      className="mr-2 size-4 animate-spin border-2 border-white/35 border-t-white"
     />
   );
 }
@@ -113,14 +113,14 @@ export default function RegisterPage() {
   return (
     <main className="relative flex min-h-screen flex-1 overflow-hidden bg-[#f4efe4] text-[#18221b]">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(20,91,61,0.24),transparent_28%),radial-gradient(circle_at_85%_20%,rgba(208,119,55,0.22),transparent_24%),linear-gradient(135deg,rgba(255,255,255,0.9),rgba(244,239,228,0.72))]" />
-      <div className="pointer-events-none absolute -left-32 top-20 h-72 w-72 rounded-full border border-[#18221b]/10" />
-      <div className="pointer-events-none absolute -bottom-24 -right-20 h-96 w-96 rounded-full bg-[#d07737]/15 blur-3xl" />
+      <div className="pointer-events-none absolute -left-32 top-20 h-72 w-72 border border-[#18221b]/10" />
+      <div className="pointer-events-none absolute -bottom-24 -right-20 h-96 w-96 bg-[#d07737]/15 blur-3xl" />
 
       <section className="relative z-10 grid w-full grid-cols-1 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="flex min-h-[42vh] flex-col justify-between px-6 py-8 sm:px-10 lg:min-h-screen lg:px-14 lg:py-12">
           <Link
             href="/register"
-            className="w-fit rounded-full border border-[#18221b]/15 bg-white/50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#315b40] shadow-sm backdrop-blur"
+            className="w-fit border border-[#18221b]/15 bg-white/50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#315b40] shadow-sm backdrop-blur"
           >
             Knowledge Base
           </Link>
@@ -139,19 +139,19 @@ export default function RegisterPage() {
           </div>
 
           <div className="grid max-w-lg grid-cols-3 gap-3 text-xs text-[#4f5a50]">
-            <div className="rounded-2xl border border-[#18221b]/10 bg-white/45 p-4 backdrop-blur">
+            <div className="border border-[#18221b]/10 bg-white/45 p-5 backdrop-blur">
               <span className="block text-lg font-semibold text-[#18221b]">
                 JWT
               </span>
               Secured API access
             </div>
-            <div className="rounded-2xl border border-[#18221b]/10 bg-white/45 p-4 backdrop-blur">
+            <div className="border border-[#18221b]/10 bg-white/45 p-5 backdrop-blur">
               <span className="block text-lg font-semibold text-[#18221b]">
                 RAG
               </span>
               Document chat
             </div>
-            <div className="rounded-2xl border border-[#18221b]/10 bg-white/45 p-4 backdrop-blur">
+            <div className="border border-[#18221b]/10 bg-white/45 p-5 backdrop-blur">
               <span className="block text-lg font-semibold text-[#18221b]">
                 Graph
               </span>
@@ -164,10 +164,10 @@ export default function RegisterPage() {
           <form
             onSubmit={handleSubmit}
             aria-busy={isLoading}
-            className="w-full max-w-md rounded-[2rem] border border-white/70 bg-white/78 p-6 shadow-2xl shadow-[#315b40]/10 backdrop-blur-xl sm:p-8"
+            className="w-full max-w-md border border-white/70 bg-white/78 p-8 shadow-2xl shadow-[#315b40]/10 backdrop-blur-xl sm:p-10"
           >
-            <div className="mb-8">
-              <div className="mb-4 h-1.5 w-16 rounded-full bg-[#315b40]" />
+            <div className="mb-10">
+              <div className="mb-5 h-1.5 w-16 bg-[#315b40]" />
               <h2 className="text-3xl font-semibold tracking-[-0.04em] text-[#18221b]">
                 Create account
               </h2>
@@ -177,13 +177,13 @@ export default function RegisterPage() {
               </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               <Button
                 type="button"
                 variant="outline"
                 disabled={isLoading || oauthProvider !== null}
                 onClick={() => handleOAuthSignIn("google")}
-                className="h-12 rounded-xl border-[#d6cdbd] bg-white/75 text-sm font-semibold text-[#26332a] hover:bg-white"
+                className="h-12 border-[#d6cdbd] bg-white/75 text-sm font-semibold text-[#26332a] hover:bg-white"
               >
                 <svg
                   aria-hidden="true"
@@ -215,7 +215,7 @@ export default function RegisterPage() {
                 variant="outline"
                 disabled={isLoading || oauthProvider !== null}
                 onClick={() => handleOAuthSignIn("github")}
-                className="h-12 rounded-xl border-[#d6cdbd] bg-[#18221b] text-sm font-semibold text-white hover:bg-[#26332a]"
+                className="h-12 border-[#d6cdbd] bg-[#18221b] text-sm font-semibold text-white hover:bg-[#26332a]"
               >
                 <svg
                   aria-hidden="true"
@@ -228,7 +228,7 @@ export default function RegisterPage() {
               </Button>
             </div>
 
-            <div className="my-6 flex items-center gap-3">
+            <div className="my-8 flex items-center gap-4">
               <div className="h-px flex-1 bg-[#d6cdbd]" />
               <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#7a857d]">
                 or
@@ -236,9 +236,9 @@ export default function RegisterPage() {
               <div className="h-px flex-1 bg-[#d6cdbd]" />
             </div>
 
-            <div className="space-y-4">
+            <div className="flex flex-col gap-5">
               <label className="block">
-                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#526357]">
+                <span className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-[#526357]">
                   Name
                 </span>
                 <Input
@@ -246,12 +246,12 @@ export default function RegisterPage() {
                   disabled={isLoading}
                   onChange={(event) => setName(event.target.value)}
                   placeholder="Ada Lovelace"
-                  className="h-12 rounded-xl border-[#d6cdbd] bg-white/80 px-4 text-sm"
+                  className="h-12 border-[#d6cdbd] bg-white/80 px-4 text-sm"
                 />
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#526357]">
+                <span className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-[#526357]">
                   Email
                 </span>
                 <Input
@@ -261,12 +261,12 @@ export default function RegisterPage() {
                   disabled={isLoading}
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="you@example.com"
-                  className="h-12 rounded-xl border-[#d6cdbd] bg-white/80 px-4 text-sm"
+                  className="h-12 border-[#d6cdbd] bg-white/80 px-4 text-sm"
                 />
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#526357]">
+                <span className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-[#526357]">
                   Password
                 </span>
                 <div className="relative">
@@ -278,7 +278,7 @@ export default function RegisterPage() {
                     disabled={isLoading}
                     onChange={(event) => setPassword(event.target.value)}
                     placeholder="At least 8 characters"
-                    className="h-12 rounded-xl border-[#d6cdbd] bg-white/80 px-4 pr-20 text-sm"
+                    className="h-12 border-[#d6cdbd] bg-white/80 px-4 pr-20 text-sm"
                   />
                   <button
                     type="button"
@@ -288,7 +288,7 @@ export default function RegisterPage() {
                     aria-pressed={showPassword}
                     disabled={isLoading}
                     onClick={() => setShowPassword((current) => !current)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-3 py-1.5 text-xs font-semibold text-[#315b40] transition hover:bg-[#315b40]/10 disabled:pointer-events-none disabled:opacity-50"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 text-xs font-semibold text-[#315b40] transition hover:bg-[#315b40]/10 disabled:pointer-events-none disabled:opacity-50"
                   >
                     {showPassword ? "Hide" : "View"}
                   </button>
@@ -297,7 +297,7 @@ export default function RegisterPage() {
             </div>
 
             {error ? (
-              <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div className="mt-6 border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
                 {error}
               </div>
             ) : null}
@@ -305,7 +305,7 @@ export default function RegisterPage() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="mt-6 h-12 w-full rounded-xl bg-[#315b40] text-sm font-semibold text-white shadow-lg shadow-[#315b40]/20 hover:bg-[#254833]"
+              className="mt-8 h-12 w-full bg-[#315b40] text-sm font-semibold text-white shadow-lg shadow-[#315b40]/20 hover:bg-[#254833]"
             >
               {isLoading ? (
                 <>
@@ -317,7 +317,7 @@ export default function RegisterPage() {
               )}
             </Button>
 
-            <p className="mt-5 text-center text-sm text-[#647067]">
+            <p className="mt-6 text-center text-sm text-[#647067]">
               Already registered?{" "}
               <Link
                 href="/signin"

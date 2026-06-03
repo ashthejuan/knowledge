@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import type { ForceGraphMethods } from "react-force-graph-2d";
 import { ShareNetwork, UploadSimple } from "@phosphor-icons/react";
 
 import { fetchSubgraph } from "@/lib/graph-client";
@@ -24,7 +25,8 @@ const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
   loading: () => <GraphSkeleton />,
 });
 
-const CANVAS_HEIGHT = 500;
+const CANVAS_HEIGHT = 560;
+const GRAPH_VIEW_PADDING = 72;
 
 export function KnowledgeGraph() {
   const [graphData, setGraphData] = useState<GraphData>({
@@ -36,6 +38,7 @@ export function KnowledgeGraph() {
   const [dimensions, setDimensions] = useState({ width: 0, height: CANVAS_HEIGHT });
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const graphRef = useRef<ForceGraphMethods | undefined>(undefined);
 
   // Pull the adjacency payload from the Neo4j-backed subgraph endpoint once on
   // mount. The fetcher already normalizes the response to the GraphData shape.
@@ -89,10 +92,22 @@ export function KnowledgeGraph() {
 
   const isEmpty = !isLoading && !error && graphData.nodes.length === 0;
 
+  useEffect(() => {
+    if (isLoading || isEmpty || error || dimensions.width === 0) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      graphRef.current?.zoomToFit(400, GRAPH_VIEW_PADDING);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [dimensions.width, error, graphData.nodes.length, isEmpty, isLoading]);
+
   return (
     <Card>
       <CardHeader className="border-b">
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-3">
           <ShareNetwork weight="duotone" className="size-4 text-primary" />
           Knowledge Graph
         </CardTitle>
@@ -101,7 +116,7 @@ export function KnowledgeGraph() {
       <CardContent className="p-0">
         <div
           ref={containerRef}
-          className="relative w-full overflow-hidden rounded-b-xl bg-background"
+          className="relative w-full overflow-hidden bg-[#18221b]"
           style={{ height: CANVAS_HEIGHT }}
         >
           {isLoading ? (
@@ -116,22 +131,32 @@ export function KnowledgeGraph() {
           ) : (
             dimensions.width > 0 && (
               <ForceGraph2D
+                ref={graphRef}
                 graphData={graphData}
                 width={dimensions.width}
                 height={dimensions.height}
                 backgroundColor="transparent"
+                warmupTicks={80}
+                cooldownTicks={120}
+                onEngineStop={() =>
+                  graphRef.current?.zoomToFit(400, GRAPH_VIEW_PADDING)
+                }
                 nodeAutoColorBy="type"
-                linkColor={() => "rgba(148, 163, 184, 0.4)"}
+                linkColor={() => "rgba(214, 205, 189, 0.34)"}
                 linkDirectionalParticles={2}
                 linkDirectionalParticleSpeed={0.005}
-                linkDirectionalParticleColor={() => "rgba(148, 163, 184, 0.9)"}
+                linkDirectionalParticleColor={() => "rgba(255, 255, 255, 0.78)"}
                 nodeCanvasObject={(node, ctx, globalScale) => {
                   const typedNode = node as GraphNode & {
                     x: number;
                     y: number;
                     color?: string;
                   };
-                  const label = typedNode.label ?? typedNode.id;
+                  const rawLabel = typedNode.label ?? typedNode.id;
+                  const label =
+                    rawLabel.length > 28
+                      ? `${rawLabel.slice(0, 28)}…`
+                      : rawLabel;
                   const radius = 5;
 
                   // Solid node disc, colored by its group metadata.
@@ -150,11 +175,11 @@ export function KnowledgeGraph() {
                   // Plain-text label, offset to the right. Font size scales
                   // linearly with the zoom factor so text stays legible.
                   const fontSize = 12 / globalScale;
-                  ctx.font = `${fontSize}px Inter, sans-serif`;
+                  ctx.font = `${fontSize}px Geist, sans-serif`;
                   ctx.textAlign = "left";
                   ctx.textBaseline = "middle";
-                  ctx.fillStyle = "rgba(248, 250, 252, 0.92)";
-                  ctx.fillText(label, typedNode.x + radius + 2, typedNode.y);
+                  ctx.fillStyle = "rgba(244, 239, 228, 0.92)";
+                  ctx.fillText(label, typedNode.x + radius + 8, typedNode.y);
                 }}
               />
             )
@@ -168,7 +193,7 @@ export function KnowledgeGraph() {
 function GraphSkeleton() {
   return (
     <div
-      className="flex w-full flex-col items-center justify-center gap-3 bg-background"
+      className="flex w-full flex-col items-center justify-center gap-4 bg-[#18221b] px-6"
       style={{ height: CANVAS_HEIGHT }}
     >
       <Spinner className="size-8 text-primary" />
@@ -181,8 +206,8 @@ function GraphSkeleton() {
 
 function GraphEmptyState() {
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-3 px-6 text-center">
-      <span className="flex size-12 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-4 px-8 py-10 text-center">
+      <span className="flex size-12 items-center justify-center border border-[#d6cdbd] bg-white/60 text-[#315b40]">
         <UploadSimple weight="duotone" className="size-6" />
       </span>
       <p className="text-sm font-medium text-foreground">
@@ -204,7 +229,7 @@ function GraphMessage({
   description: string;
 }) {
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-6 text-center">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-3 px-8 py-10 text-center">
       <p className="text-sm font-medium text-foreground">{title}</p>
       <p className="max-w-sm text-xs/relaxed text-muted-foreground">
         {description}
