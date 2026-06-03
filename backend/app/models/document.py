@@ -16,6 +16,9 @@ class Document(Base):
         primary_key=True,
         default=uuid.uuid4,
     )
+    # Tenant boundary: every document is owned by exactly one user and all
+    # queries must filter on this column to prevent cross-tenant reads.
+    user_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
     filename: Mapped[str | None] = mapped_column(String(512), nullable=True)
     source_type: Mapped[str] = mapped_column(String(10), nullable=False)
     source_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)

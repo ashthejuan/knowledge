@@ -5,6 +5,7 @@ from typing_extensions import TypedDict
 
 class ChatState(TypedDict):
     query: str                        # Current user question
+    user_id: str                      # Tenant boundary for vector/graph retrieval
     chat_history: List[Dict[str, str]] # Prior turns: [{"role": "user", "content": "..."}, ...]
     # vector_context / graph_context use operator.add reducers so the vector and
     # graph retrievers can run as parallel branches: LangGraph appends each

@@ -137,8 +137,10 @@ def _graph_extraction_input(state: GraphState) -> str:
     reraise=True,
     before_sleep=before_sleep_log(logger, logging.WARNING),
 )
-def _upsert_vectors(vectors: list[dict[str, Any]]) -> None:
-    pinecone_index.upsert(vectors=vectors)
+def _upsert_vectors(vectors: list[dict[str, Any]], namespace: str) -> None:
+    # ``namespace`` is the owning user_id: Pinecone keeps each namespace fully
+    # isolated, so a user can never read or overwrite another tenant's vectors.
+    pinecone_index.upsert(vectors=vectors, namespace=namespace)
 
 
 @retry(
@@ -148,11 +150,14 @@ def _upsert_vectors(vectors: list[dict[str, Any]]) -> None:
     reraise=True,
     before_sleep=before_sleep_log(logger, logging.WARNING),
 )
-def _query_similar_chunks(summary_embedding: list[float], document_id: str) -> Any:
+def _query_similar_chunks(
+    summary_embedding: list[float], document_id: str, namespace: str
+) -> Any:
     return pinecone_index.query(
         vector=summary_embedding,
         top_k=5,
         include_metadata=True,
+        namespace=namespace,
         filter={
             "$and": [
                 {"document_id": {"$ne": document_id}},
@@ -271,6 +276,7 @@ def extract_graph_elements(state: GraphState) -> GraphState:
 
 def embed_and_store(state: GraphState) -> GraphState:
     document_id = state["document_id"]
+    user_id = state["user_id"]
     text_chunks = _require_text_chunks(state, "embed_and_store")
 
     vectors: list[dict[str, Any]] = []
@@ -355,7 +361,7 @@ def embed_and_store(state: GraphState) -> GraphState:
     try:
         for batch in _batched(vectors, PINECONE_UPSERT_BATCH_SIZE):
             upsert_started_at = time.perf_counter()
-            _upsert_vectors(batch)
+            _upsert_vectors(batch, namespace=user_id)
             upserted_count += len(batch)
             logger.info(
                 "upserted Pinecone vector batch",
@@ -384,6 +390,7 @@ def embed_and_store(state: GraphState) -> GraphState:
 
 def cross_reference(state: GraphState) -> GraphState:
     current_document_id = state["document_id"]
+    user_id = state["user_id"]
     summary = _require_summary(state, "cross_reference")
     try:
         embedding_started_at = time.perf_counter()
@@ -397,7 +404,9 @@ def cross_reference(state: GraphState) -> GraphState:
         )
 
         query_started_at = time.perf_counter()
-        query_result = _query_similar_chunks(summary_embedding, current_document_id)
+        query_result = _query_similar_chunks(
+            summary_embedding, current_document_id, namespace=user_id
+        )
         logger.info(
             "queried Pinecone for cross-reference context",
             extra={

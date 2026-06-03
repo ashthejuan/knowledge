@@ -10,7 +10,11 @@ from app.core.celery_app import celery_app
 from app.db.session import SessionLocal
 from app.models.document import Document
 from app.services.graph.workflow import ingestion_pipeline
-from app.services.storage import download_file_from_s3, upload_json_to_s3
+from app.services.storage import (
+    build_processed_key,
+    download_file_from_s3,
+    upload_json_to_s3,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -41,7 +45,7 @@ def _extract_url_text(url: str) -> str:
 
 
 @celery_app.task(name="app.services.tasks.process_document_task")
-def process_document_task(document_id: str) -> None:
+def process_document_task(document_id: str, user_id: str) -> None:
     db = SessionLocal()
 
     try:
@@ -49,6 +53,16 @@ def process_document_task(document_id: str) -> None:
         document = db.get(Document, document_uuid)
         if document is None:
             logger.error("Document %s was not found", document_id)
+            return
+
+        # Defense-in-depth: the asset must belong to the user that enqueued the
+        # task before any extraction begins.
+        if document.user_id != user_id:
+            logger.error(
+                "Document %s does not belong to user %s; refusing to process",
+                document_id,
+                user_id,
+            )
             return
 
         if document.status == "completed":
@@ -81,11 +95,12 @@ def process_document_task(document_id: str) -> None:
 
             initial_state = {
                 "document_id": str(document_id),
+                "user_id": user_id,
                 "text_chunks": chunks,
             }
             final_state = ingestion_pipeline.invoke(initial_state)
 
-            processed_key = f"processed/{document_id}_chunks.json"
+            processed_key = build_processed_key(user_id, str(document_id))
             upload_json_to_s3(
                 object_key=processed_key,
                 payload={"document_id": document_id, "chunks": chunks},

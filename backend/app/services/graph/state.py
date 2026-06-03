@@ -13,6 +13,9 @@ class GraphState(TypedDict):
     """
 
     document_id: str
+    # Owning tenant; carried through every node so vector upserts and graph
+    # writes are partitioned per user (Pinecone namespace + Neo4j user_id).
+    user_id: str
     text_chunks: list[str]
     summary: str
     contextual_analysis: str

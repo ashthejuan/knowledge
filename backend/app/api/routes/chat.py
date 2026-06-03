@@ -5,6 +5,8 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 
+from app.core.security import CurrentUser
+
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -53,12 +55,17 @@ def _content_as_text(content: Any) -> str:
     return str(content)
 
 
-def _stream_generated_tokens(payload: ChatStreamRequest, chat_rag_agent: Any) -> Iterator[str]:
+def _stream_generated_tokens(
+    payload: ChatStreamRequest, chat_rag_agent: Any, user_id: str
+) -> Iterator[str]:
     graph_input = {
         "query": payload.message,
         "chat_history": [message.model_dump() for message in payload.history],
         "vector_context": [],
         "graph_context": [],
+        # Tenant boundary threaded into the RAG state so every retrieval node
+        # (Pinecone namespace + Neo4j traversal) stays scoped to this user.
+        "user_id": user_id,
     }
 
     for chunk, metadata in chat_rag_agent.stream(graph_input, stream_mode="messages"):
@@ -72,11 +79,11 @@ def _stream_generated_tokens(payload: ChatStreamRequest, chat_rag_agent: Any) ->
 
 
 @router.post("/stream")
-def stream_chat(payload: ChatStreamRequest) -> StreamingResponse:
+def stream_chat(payload: ChatStreamRequest, user_id: CurrentUser) -> StreamingResponse:
     from app.services.chat.workflow import chat_rag_agent
 
     return StreamingResponse(
-        _stream_generated_tokens(payload, chat_rag_agent),
+        _stream_generated_tokens(payload, chat_rag_agent, user_id),
         media_type="text/plain",
         headers={
             "Cache-Control": "no-cache",

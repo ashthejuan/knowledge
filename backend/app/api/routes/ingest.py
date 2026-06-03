@@ -5,9 +5,10 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel, HttpUrl
 from sqlalchemy.orm import Session
 
+from app.core.security import CurrentUser
 from app.db.session import get_db
 from app.models.document import Document
-from app.services.storage import upload_file_to_s3
+from app.services.storage import build_document_key, upload_file_to_s3
 from app.services.tasks import process_document_task
 
 
@@ -38,7 +39,7 @@ class IngestStatusResponse(BaseModel):
     response_model=IngestResponse,
     status_code=status.HTTP_202_ACCEPTED,
 )
-def ingest_pdf(file: PdfUpload, db: DbSession) -> IngestResponse:
+def ingest_pdf(file: PdfUpload, db: DbSession, user_id: CurrentUser) -> IngestResponse:
     filename = file.filename or ""
     if not filename.lower().endswith(".pdf"):
         raise HTTPException(
@@ -53,7 +54,7 @@ def ingest_pdf(file: PdfUpload, db: DbSession) -> IngestResponse:
         )
 
     document_id = uuid.uuid4()
-    s3_key = f"pdfs/{document_id}.pdf"
+    s3_key = build_document_key(user_id, str(document_id), extension="pdf")
     file_bytes = file.file.read()
 
     upload_file_to_s3(
@@ -64,6 +65,7 @@ def ingest_pdf(file: PdfUpload, db: DbSession) -> IngestResponse:
 
     document = Document(
         id=document_id,
+        user_id=user_id,
         filename=filename,
         source_type="pdf",
         s3_key=s3_key,
@@ -72,7 +74,7 @@ def ingest_pdf(file: PdfUpload, db: DbSession) -> IngestResponse:
     db.add(document)
     db.commit()
 
-    process_document_task.delay(str(document_id))
+    process_document_task.delay(str(document_id), user_id)
 
     return IngestResponse(document_id=document_id, status="processing_queued")
 
@@ -81,8 +83,14 @@ def ingest_pdf(file: PdfUpload, db: DbSession) -> IngestResponse:
     "/status/{document_id}",
     response_model=IngestStatusResponse,
 )
-def get_ingest_status(document_id: uuid.UUID, db: DbSession) -> IngestStatusResponse:
-    document = db.query(Document).filter(Document.id == document_id).first()
+def get_ingest_status(
+    document_id: uuid.UUID, db: DbSession, user_id: CurrentUser
+) -> IngestStatusResponse:
+    document = (
+        db.query(Document)
+        .filter(Document.id == document_id, Document.user_id == user_id)
+        .first()
+    )
 
     if document is None:
         raise HTTPException(
@@ -103,11 +111,14 @@ def get_ingest_status(document_id: uuid.UUID, db: DbSession) -> IngestStatusResp
     response_model=IngestResponse,
     status_code=status.HTTP_202_ACCEPTED,
 )
-def ingest_url(payload: URLIngestRequest, db: DbSession) -> IngestResponse:
+def ingest_url(
+    payload: URLIngestRequest, db: DbSession, user_id: CurrentUser
+) -> IngestResponse:
     document_id = uuid.uuid4()
 
     document = Document(
         id=document_id,
+        user_id=user_id,
         filename=None,
         source_type="url",
         source_url=str(payload.url),
@@ -117,6 +128,6 @@ def ingest_url(payload: URLIngestRequest, db: DbSession) -> IngestResponse:
     db.add(document)
     db.commit()
 
-    process_document_task.delay(str(document_id))
+    process_document_task.delay(str(document_id), user_id)
 
     return IngestResponse(document_id=document_id, status="processing_queued")

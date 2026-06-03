@@ -9,6 +9,7 @@ import {
 } from "@phosphor-icons/react";
 
 import { streamChatResponse } from "@/lib/api-client";
+import { AuthenticationRequiredError } from "@/lib/auth-fetch";
 import type { Message } from "@/types/chat";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -82,7 +83,10 @@ export function ChatInterface() {
           )
         );
       }
-    } catch {
+    } catch (caughtError) {
+      if (caughtError instanceof AuthenticationRequiredError) {
+        return;
+      }
       setErroredIds((prev) => new Set(prev).add(assistantId));
     } finally {
       setIsLoading(false);

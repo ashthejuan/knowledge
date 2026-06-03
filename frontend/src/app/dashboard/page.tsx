@@ -4,6 +4,7 @@ import { ChatCircleText, UploadSimple } from "@phosphor-icons/react/dist/ssr";
 
 import { KnowledgeGraph } from "@/components/knowledge-graph";
 import { Button } from "@/components/ui/button";
+import { requireAuth } from "@/lib/require-auth";
 
 export const metadata: Metadata = {
   title: "Memory Dashboard",
@@ -11,7 +12,9 @@ export const metadata: Metadata = {
     "Map the semantic relationship vectors connecting your documents, entities, and concepts.",
 };
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  await requireAuth("/dashboard");
+
   return (
     <div className="container mx-auto flex flex-col gap-6 px-4 py-10">
       <header className="flex flex-col gap-2">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { ChatInterface } from "@/components/chat-interface";
+import { requireAuth } from "@/lib/require-auth";
 
 export const metadata: Metadata = {
   title: "Semantic Chat",
@@ -8,7 +9,9 @@ export const metadata: Metadata = {
     "Interact directly with unified vector context and cross-referenced graph assets.",
 };
 
-export default function ChatPage() {
+export default async function ChatPage() {
+  await requireAuth("/chat");
+
   return (
     <div className="container mx-auto py-10 px-4">
       <header className="mb-8 flex flex-col gap-2">

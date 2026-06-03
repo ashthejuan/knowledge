@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { ShareNetwork, UploadSimple } from "@phosphor-icons/react";
 
 import { fetchSubgraph } from "@/lib/graph-client";
+import { AuthenticationRequiredError } from "@/lib/auth-fetch";
 import type { GraphData, GraphNode } from "@/types/graph";
 import {
   Card,
@@ -45,7 +46,10 @@ export function KnowledgeGraph() {
       try {
         const data = await fetchSubgraph();
         if (!cancelled) setGraphData(data);
-      } catch {
+      } catch (caughtError) {
+        if (caughtError instanceof AuthenticationRequiredError) {
+          return;
+        }
         if (!cancelled) {
           setError(
             "Unable to reach the graph service. Confirm the backend is running and try again."

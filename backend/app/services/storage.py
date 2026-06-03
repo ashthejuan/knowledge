@@ -19,6 +19,20 @@ s3_client = boto3.client(
 )
 
 
+def build_document_key(user_id: str, document_id: str, extension: str = "pdf") -> str:
+    """Return a tenant-scoped object key for a raw uploaded document.
+
+    Prefixing every object with ``users/{user_id}/`` keeps each tenant's blobs
+    in an isolated key namespace inside the shared MinIO bucket.
+    """
+    return f"users/{user_id}/documents/{document_id}.{extension}"
+
+
+def build_processed_key(user_id: str, document_id: str) -> str:
+    """Return a tenant-scoped object key for processed chunk artifacts."""
+    return f"users/{user_id}/processed/{document_id}_chunks.json"
+
+
 def upload_file_to_s3(
     file_bytes: bytes,
     object_key: str,

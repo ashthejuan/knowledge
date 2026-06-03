@@ -1,13 +1,17 @@
+import logging
 import re
 from typing import Any, Dict, List
 
-from app.db.neo4j_client import get_neo4j_driver
+from neo4j.exceptions import Neo4jError, ServiceUnavailable
+
+from app.db.neo4j_client import Neo4jConfigurationError, get_neo4j_driver
 from app.services.chat.state import ChatState
 from app.services.llm import chat_model, embeddings, pinecone_index
 
 VECTOR_RETRIEVAL_TOP_K = 10
 GRAPH_RETRIEVAL_LIMIT = 20
 ENTITY_TOKEN_PATTERN = re.compile(r"\b[A-Z][A-Za-z0-9]*(?:[- ][A-Z][A-Za-z0-9]*)*\b")
+logger = logging.getLogger(__name__)
 
 REFINE_QUERY_PROMPT = (
     "Given the following conversation history and a new user query, rewrite the "
@@ -122,6 +126,9 @@ def retrieve_vectors(state: ChatState) -> dict[str, list[str]]:
         vector=query_embedding,
         top_k=VECTOR_RETRIEVAL_TOP_K,
         include_metadata=True,
+        # Restrict retrieval to the caller's namespace so semantic context can
+        # only ever come from documents the user themselves ingested.
+        namespace=state["user_id"],
         filter={"type": {"$eq": "chunk"}},
     )
 
@@ -147,10 +154,12 @@ def retrieve_graph(state: ChatState) -> dict[str, list[str]]:
         return {"graph_context": []}
 
     normalized_entities = [entity.casefold() for entity in entities]
+    # Both the matched entity and its adjacent node must belong to the current
+    # user, so graph context can never bridge into another tenant's subgraph.
     cypher = """
-    MATCH (e:Entity)
+    MATCH (e:Entity {user_id: $user_id})
     WHERE e.name IN $entities OR toLower(e.name) IN $normalized_entities
-    MATCH (e)-[r]-(adjacent)
+    MATCH (e)-[r]-(adjacent {user_id: $user_id})
     RETURN
         CASE
             WHEN startNode(r) = e
@@ -161,18 +170,26 @@ def retrieve_graph(state: ChatState) -> dict[str, list[str]]:
     """
 
     relationships: list[str] = []
-    driver = get_neo4j_driver()
-    with driver.session() as session:
-        result = session.run(
-            cypher,
-            entities=entities,
-            normalized_entities=normalized_entities,
-            limit=GRAPH_RETRIEVAL_LIMIT,
+    try:
+        driver = get_neo4j_driver()
+        with driver.session() as session:
+            result = session.run(
+                cypher,
+                entities=entities,
+                normalized_entities=normalized_entities,
+                user_id=state["user_id"],
+                limit=GRAPH_RETRIEVAL_LIMIT,
+            )
+            for record in result:
+                relationship = record["relationship"]
+                if relationship:
+                    relationships.append(str(relationship))
+    except (Neo4jConfigurationError, Neo4jError, ServiceUnavailable) as exc:
+        logger.warning(
+            "Neo4j graph retrieval is unavailable; continuing with vector context only: %s",
+            exc,
+            exc_info=logger.isEnabledFor(logging.DEBUG),
         )
-        for record in result:
-            relationship = record["relationship"]
-            if relationship:
-                relationships.append(str(relationship))
 
     return {
         "graph_context": relationships,

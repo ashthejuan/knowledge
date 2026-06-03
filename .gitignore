@@ -1,4 +1,6 @@
 .env
+.env.local
+/frontend/.env.local
 .agents/*
 .cursor/*
 /backend/venv/*

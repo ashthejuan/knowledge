@@ -14,6 +14,13 @@ pnpm dev
 bun dev
 ```
 
+Create `frontend/.env.local` before starting the dev server:
+
+```bash
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=<same value as backend/.env NEXTAUTH_SECRET>
+```
+
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.

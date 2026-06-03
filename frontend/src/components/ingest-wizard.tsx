@@ -12,6 +12,11 @@ import {
 } from "@phosphor-icons/react";
 
 import { cn } from "@/lib/utils";
+import {
+  AuthenticationRequiredError,
+  getAuthHeaders,
+  throwIfUnauthorized,
+} from "@/lib/auth-fetch";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -81,8 +86,10 @@ export function IngestWizard() {
     const interval = setInterval(async () => {
       try {
         const response = await fetch(
-          `${API_BASE}/api/ingest/status/${activeDocId}`
+          `${API_BASE}/api/ingest/status/${activeDocId}`,
+          { headers: { ...(await getAuthHeaders()) } }
         );
+        throwIfUnauthorized(response);
         if (!response.ok) return;
 
         const data: StatusResponse = await response.json();
@@ -122,13 +129,18 @@ export function IngestWizard() {
     try {
       const response = await fetch(`${API_BASE}/api/ingest/pdf`, {
         method: "POST",
+        headers: { ...(await getAuthHeaders()) },
         body: formData,
       });
+      throwIfUnauthorized(response);
       if (!response.ok) throw new Error("Upload failed");
 
       const data = await response.json();
       setActiveDocId(data.document_id);
-    } catch {
+    } catch (caughtError) {
+      if (caughtError instanceof AuthenticationRequiredError) {
+        return;
+      }
       setPipelineStatus("failed");
     } finally {
       setIsSubmitting(false);
@@ -156,15 +168,22 @@ export function IngestWizard() {
     try {
       const response = await fetch(`${API_BASE}/api/ingest/url`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(await getAuthHeaders()),
+        },
         body: JSON.stringify({ url: trimmed }),
       });
+      throwIfUnauthorized(response);
       if (!response.ok) throw new Error("Submission failed");
 
       const data = await response.json();
       setActiveDocId(data.document_id);
       setUrlInput("");
-    } catch {
+    } catch (caughtError) {
+      if (caughtError instanceof AuthenticationRequiredError) {
+        return;
+      }
       setPipelineStatus("failed");
     } finally {
       setIsSubmitting(false);

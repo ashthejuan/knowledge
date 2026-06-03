@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { IngestWizard } from "@/components/ingest-wizard";
+import { requireAuth } from "@/lib/require-auth";
 
 export const metadata: Metadata = {
   title: "Knowledge Capture",
@@ -8,7 +9,9 @@ export const metadata: Metadata = {
     "Upload academic files or parse high-density URLs into your neural graph index.",
 };
 
-export default function IngestPage() {
+export default async function IngestPage() {
+  await requireAuth("/ingest");
+
   return (
     <div className="container mx-auto py-10 px-4 min-h-screen">
       <header className="mb-8 flex flex-col gap-2">

@@ -1,4 +1,5 @@
 import { Message } from "@/types/chat";
+import { getAuthHeaders, throwIfUnauthorized } from "@/lib/auth-fetch";
 
 export async function* streamChatResponse(
   message: string,
@@ -14,12 +15,15 @@ export async function* streamChatResponse(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...(await getAuthHeaders()),
     },
     body: JSON.stringify({
       message,
       history: formattedHistory,
     }),
   });
+
+  throwIfUnauthorized(response);
 
   if (!response.ok || !response.body) {
     throw new Error("Failed to generate streaming response from GraphRAG engine.");

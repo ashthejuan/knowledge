@@ -11,12 +11,19 @@ logger = logging.getLogger(__name__)
 
 _RELATIONSHIP_TYPE_PATTERN = re.compile(r"[^A-Z0-9_]+")
 
+# A single-tenant deployment enforced global uniqueness on ``Entity.name``.
+# Under multi-tenancy every user owns a distinct node variant for the same
+# concept (e.g. "Machine Learning"), so uniqueness must be the *composite*
+# (name, user_id). The legacy global constraint is dropped first because it
+# would otherwise collapse two users' entities into one shared node.
+_LEGACY_GRAPH_CONSTRAINTS = ("DROP CONSTRAINT entity_name IF EXISTS",)
+
 # Uniqueness constraints also create a backing index, so MERGE on these
 # properties becomes an index lookup instead of a full label scan and is
 # safe against duplicates under concurrent writes (e.g. Celery workers).
 _GRAPH_CONSTRAINTS = (
-    "CREATE CONSTRAINT entity_name IF NOT EXISTS "
-    "FOR (e:Entity) REQUIRE e.name IS UNIQUE",
+    "CREATE CONSTRAINT entity_name_user IF NOT EXISTS "
+    "FOR (e:Entity) REQUIRE (e.name, e.user_id) IS UNIQUE",
     "CREATE CONSTRAINT document_id IF NOT EXISTS "
     "FOR (d:Document) REQUIRE d.id IS UNIQUE",
 )
@@ -25,10 +32,13 @@ _GRAPH_CONSTRAINTS = (
 def ensure_graph_constraints() -> None:
     """Create the uniqueness constraints required for de-duplicated MERGEs.
 
-    Idempotent: uses ``IF NOT EXISTS`` so it is safe to call on every startup.
+    Idempotent: uses ``IF NOT EXISTS``/``IF EXISTS`` so it is safe to call on
+    every startup, and migrates the legacy single-tenant constraint.
     """
     driver = get_neo4j_driver()
     with driver.session() as session:
+        for statement in _LEGACY_GRAPH_CONSTRAINTS:
+            session.run(statement)
         for statement in _GRAPH_CONSTRAINTS:
             session.run(statement)
 
@@ -102,15 +112,21 @@ def _relationships_by_type(
 def _run_write_triples_transaction(
     tx: Any,
     doc_id: str,
+    user_id: str,
     entities: list[dict[str, str]],
     relationships_by_type: dict[str, list[dict[str, str]]],
 ) -> None:
-    # Query 1: create or reuse the document node.
+    # Every MERGE/MATCH below is bounded by ``user_id`` so nodes and edges are
+    # owned by exactly one tenant; the same concept extracted by two users
+    # resolves to two distinct node variants.
+
+    # Query 1: create or reuse the document node for this user.
     tx.run(
         """
-        MERGE (d:Document {id: $doc_id})
+        MERGE (d:Document {id: $doc_id, user_id: $user_id})
         """,
         doc_id=doc_id,
+        user_id=user_id,
     )
 
     # Query 2: merge all extracted entities in one pass.
@@ -118,47 +134,52 @@ def _run_write_triples_transaction(
         tx.run(
             """
             UNWIND $entities AS entity
-            MERGE (e:Entity {name: entity.name})
+            MERGE (e:Entity {name: entity.name, user_id: $user_id})
             ON CREATE SET e.type = entity.type
             ON MATCH SET e.type = coalesce(e.type, entity.type)
             """,
             entities=entities,
+            user_id=user_id,
         )
 
-    # Query 3: merge typed relationship edges between existing entity nodes.
+    # Query 3: merge typed relationship edges between this user's entity nodes.
     for relationship_type, relationships in relationships_by_type.items():
         tx.run(
             f"""
             UNWIND $relationships AS relationship
-            MATCH (source:Entity {{name: relationship.source}})
-            MATCH (target:Entity {{name: relationship.target}})
+            MATCH (source:Entity {{name: relationship.source, user_id: $user_id}})
+            MATCH (target:Entity {{name: relationship.target, user_id: $user_id}})
             MERGE (source)-[r:{relationship_type}]->(target)
             ON CREATE SET r.predicate = relationship.predicate
             ON MATCH SET r.predicate = coalesce(r.predicate, relationship.predicate)
             """,
             relationships=relationships,
+            user_id=user_id,
         )
 
     # Query 4: explicitly connect this document to every entity it mentions.
     if entities:
         tx.run(
             """
-            MATCH (d:Document {id: $doc_id})
+            MATCH (d:Document {id: $doc_id, user_id: $user_id})
             UNWIND $entities AS entity
-            MATCH (e:Entity {name: entity.name})
+            MATCH (e:Entity {name: entity.name, user_id: $user_id})
             MERGE (d)-[:MENTIONS]->(e)
             """,
             doc_id=doc_id,
+            user_id=user_id,
             entities=entities,
         )
 
 
 def write_triples_to_neo4j(
-    doc_id: str, extraction_data: KnowledgeGraphExtraction
+    doc_id: str, user_id: str, extraction_data: KnowledgeGraphExtraction
 ) -> None:
     """Persist extracted knowledge graph triples for a document into Neo4j."""
     if not doc_id.strip():
         raise ValueError("doc_id is required to write triples to Neo4j")
+    if not user_id.strip():
+        raise ValueError("user_id is required to write triples to Neo4j")
 
     entities = _dedupe_entities(extraction_data)
     relationships_by_type = _relationships_by_type(extraction_data)
@@ -168,6 +189,7 @@ def write_triples_to_neo4j(
         session.execute_write(
             _run_write_triples_transaction,
             doc_id.strip(),
+            user_id.strip(),
             entities,
             relationships_by_type,
         )
@@ -185,11 +207,15 @@ def write_triples_to_neo4j(
     )
 
 
-def fetch_subgraph(limit: int = 100) -> dict[str, list[dict[str, str]]]:
-    """Return a deduplicated node/link payload for frontend graph renderers."""
+def fetch_subgraph(user_id: str, limit: int = 100) -> dict[str, list[dict[str, str]]]:
+    """Return a deduplicated node/link payload for frontend graph renderers.
+
+    The traversal is constrained so that both endpoints of every returned edge
+    belong to ``user_id``; a tenant can only ever visualize their own subgraph.
+    """
     driver = get_neo4j_driver()
     query = """
-    MATCH (s)-[r]->(t)
+    MATCH (s {user_id: $user_id})-[r]->(t {user_id: $user_id})
     RETURN s.name AS source_name, type(r) AS relationship_type, t.name AS target_name
     LIMIT $limit
     """
@@ -198,7 +224,7 @@ def fetch_subgraph(limit: int = 100) -> dict[str, list[dict[str, str]]]:
     links: list[dict[str, str]] = []
 
     with driver.session() as session:
-        result = session.run(query, limit=limit)
+        result = session.run(query, user_id=user_id, limit=limit)
         for record in result:
             source_name = record["source_name"]
             target_name = record["target_name"]
