@@ -10,6 +10,16 @@ import {
   getAuthHeaders,
   throwIfUnauthorized,
 } from "@/lib/auth-fetch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -30,19 +40,15 @@ export function DocumentActions({
   const [pendingAction, setPendingAction] = useState<DocumentAction | null>(
     null
   );
+  const [confirmAction, setConfirmAction] = useState<DocumentAction | null>(
+    null
+  );
   const canCancel = ["pending", "processing"].includes(status);
+  const isDeleteConfirm = confirmAction === "delete";
 
-  async function runAction(action: DocumentAction) {
-    const confirmed =
-      action === "cancel"
-        ? window.confirm(`Stop processing "${label}"?`)
-        : window.confirm(
-            `Delete "${label}" from SQL, MinIO, and Pinecone vectors? This cannot be undone.`
-          );
-
-    if (!confirmed) return;
-
+  async function executeAction(action: DocumentAction) {
     setPendingAction(action);
+    setConfirmAction(null);
 
     try {
       const response = await fetch(
@@ -69,7 +75,13 @@ export function DocumentActions({
       }
 
       toast.success(
-        action === "cancel" ? "Processing stopped" : "Document deleted"
+        action === "cancel" ? "Processing stopped" : "Source deleted",
+        {
+          description:
+            action === "cancel"
+              ? `"${label}" is no longer being indexed.`
+              : `"${label}" was removed from your knowledge base.`,
+        }
       );
       router.refresh();
     } catch (caughtError) {
@@ -88,37 +100,100 @@ export function DocumentActions({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      {canCancel ? (
+    <>
+      <div className="flex flex-wrap items-center gap-3">
+        {canCancel ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={pendingAction !== null}
+            onClick={() => setConfirmAction("cancel")}
+          >
+            {pendingAction === "cancel" ? (
+              <Spinner />
+            ) : (
+              <Ban data-icon="inline-start" />
+            )}
+            Stop
+          </Button>
+        ) : null}
         <Button
           type="button"
           variant="outline"
           size="sm"
           disabled={pendingAction !== null}
-          onClick={() => void runAction("cancel")}
+          onClick={() => setConfirmAction("delete")}
         >
-          {pendingAction === "cancel" ? (
+          {pendingAction === "delete" ? (
             <Spinner />
           ) : (
-            <Ban data-icon="inline-start" />
+            <Trash2 data-icon="inline-start" />
           )}
-          Stop
+          Delete
         </Button>
-      ) : null}
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        disabled={pendingAction !== null}
-        onClick={() => void runAction("delete")}
+      </div>
+
+      <AlertDialog
+        open={confirmAction !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirmAction(null);
+          }
+        }}
       >
-        {pendingAction === "delete" ? (
-          <Spinner />
-        ) : (
-          <Trash2 data-icon="inline-start" />
-        )}
-        Delete
-      </Button>
-    </div>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {isDeleteConfirm ? "Delete source?" : "Stop processing?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {isDeleteConfirm ? (
+                <>
+                  <span className="font-medium text-[#18221b]">
+                    &ldquo;{label}&rdquo;
+                  </span>{" "}
+                  will be removed from the database. This cannot be
+                  undone.
+                </>
+              ) : (
+                <>
+                  <span className="font-medium text-[#18221b]">
+                    &ldquo;{label}&rdquo;
+                  </span>{" "}
+                  will stop indexing but remain in your library.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pendingAction !== null}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={pendingAction !== null}
+              className={
+                isDeleteConfirm
+                  ? "border-transparent bg-red-600 text-white hover:bg-red-700"
+                  : undefined
+              }
+              onClick={() => {
+                if (confirmAction) {
+                  void executeAction(confirmAction);
+                }
+              }}
+            >
+              {pendingAction !== null ? (
+                <Spinner />
+              ) : isDeleteConfirm ? (
+                "Delete"
+              ) : (
+                "Stop"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
