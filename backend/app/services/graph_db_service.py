@@ -172,6 +172,56 @@ def _run_write_triples_transaction(
         )
 
 
+_DELETE_DOCUMENT_GRAPH_QUERY = """
+MATCH (d:Document {id: $doc_id, user_id: $user_id})
+OPTIONAL MATCH (d)-[:MENTIONS]->(e:Entity {user_id: $user_id})
+WITH d, collect(DISTINCT e) AS mentionedEntities
+DETACH DELETE d
+WITH [entity IN mentionedEntities WHERE entity IS NOT NULL] AS mentionedEntities
+UNWIND mentionedEntities AS e
+WITH e
+WHERE NOT EXISTS {
+  MATCH (:Document {user_id: e.user_id})-[:MENTIONS]->(e)
+}
+DETACH DELETE e
+"""
+
+
+def _run_delete_document_graph_transaction(
+    tx: Any, doc_id: str, user_id: str
+) -> None:
+    tx.run(
+        _DELETE_DOCUMENT_GRAPH_QUERY,
+        doc_id=doc_id,
+        user_id=user_id,
+    )
+
+
+def delete_document_graph(doc_id: str, user_id: str) -> None:
+    """Remove a document's graph node and any tenant entities it exclusively mentions.
+
+    Idempotent: succeeds when the document node is already absent. Shared entities
+    remain when another document for the same user still mentions them.
+    """
+    if not doc_id.strip():
+        raise ValueError("doc_id is required to delete document graph from Neo4j")
+    if not user_id.strip():
+        raise ValueError("user_id is required to delete document graph from Neo4j")
+
+    driver = get_neo4j_driver()
+    with driver.session() as session:
+        session.execute_write(
+            _run_delete_document_graph_transaction,
+            doc_id.strip(),
+            user_id.strip(),
+        )
+
+    logger.info(
+        "deleted document graph from Neo4j",
+        extra={"document_id": doc_id, "user_id": user_id},
+    )
+
+
 def write_triples_to_neo4j(
     doc_id: str, user_id: str, extraction_data: KnowledgeGraphExtraction
 ) -> None:

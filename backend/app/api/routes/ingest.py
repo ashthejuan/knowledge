@@ -8,7 +8,11 @@ from sqlalchemy.orm import Session
 from app.core.security import CurrentUser
 from app.db.session import get_db
 from app.models.document import Document
-from app.services.document_cleanup import delete_document_objects, delete_document_vectors
+from app.services.document_cleanup import (
+    delete_document_graph,
+    delete_document_objects,
+    delete_document_vectors,
+)
 from app.services.storage import build_document_key, upload_file_to_s3
 from app.services.tasks import process_document_task
 
@@ -205,6 +209,7 @@ def delete_ingested_document(
     try:
         delete_document_vectors(str(document.id), user_id)
         delete_document_objects(user_id, str(document.id), document.s3_key)
+        delete_document_graph(str(document.id), user_id)
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
