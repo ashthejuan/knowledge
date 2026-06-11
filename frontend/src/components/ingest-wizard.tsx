@@ -17,6 +17,7 @@ import {
   getAuthHeaders,
   throwIfUnauthorized,
 } from "@/lib/auth-fetch";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -27,6 +28,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 const API_BASE = "http://localhost:8000";
 const POLL_INTERVAL_MS = 2000;
@@ -76,9 +78,6 @@ export function IngestWizard() {
   const [activeDocId, setActiveDocId] = useState<string | null>(null);
   const [pipelineStatus, setPipelineStatus] = useState<PipelineStatus>("idle");
 
-  // Long-poll the tracking endpoint while a document is mid-flight. The effect
-  // is keyed to both the active id and the latest status so it tears down its
-  // timer the moment the pipeline reaches a terminal state.
   useEffect(() => {
     if (!activeDocId) return;
     if (pipelineStatus === "completed" || pipelineStatus === "failed") return;
@@ -102,7 +101,6 @@ export function IngestWizard() {
     return () => clearInterval(interval);
   }, [activeDocId, pipelineStatus]);
 
-  // Surface an accessible snackbar exactly once per terminal transition.
   useEffect(() => {
     if (pipelineStatus === "completed") {
       toast.success(STATUS_COPY.completed.title, {
@@ -200,37 +198,32 @@ export function IngestWizard() {
       </CardHeader>
 
       <CardContent className="flex flex-col gap-6">
-        <div
-          role="tablist"
+        <ToggleGroup
+          type="single"
+          value={activeTab}
+          onValueChange={(value) => {
+            if (value) setActiveTab(value as IngestTab);
+          }}
+          variant="outline"
+          className="grid w-full grid-cols-2"
           aria-label="Ingestion source type"
-          className="grid grid-cols-2 gap-2 border border-[#d6cdbd] bg-white/45 p-1.5"
         >
-          <Button
-            role="tab"
-            aria-selected={activeTab === "pdf"}
-            variant={activeTab === "pdf" ? "secondary" : "ghost"}
-            onClick={() => setActiveTab("pdf")}
-          >
+          <ToggleGroupItem value="pdf" className="h-9 flex-1">
             <FileText weight="duotone" data-icon="inline-start" />
             PDF Upload
-          </Button>
-          <Button
-            role="tab"
-            aria-selected={activeTab === "url"}
-            variant={activeTab === "url" ? "secondary" : "ghost"}
-            onClick={() => setActiveTab("url")}
-          >
+          </ToggleGroupItem>
+          <ToggleGroupItem value="url" className="h-9 flex-1">
             <LinkSimple weight="duotone" data-icon="inline-start" />
             Article URL
-          </Button>
-        </div>
+          </ToggleGroupItem>
+        </ToggleGroup>
 
         {activeTab === "pdf" ? (
           <div
             {...getRootProps()}
             className={cn(
-              "flex cursor-pointer flex-col items-center justify-center gap-3 border border-dashed border-[#d6cdbd] bg-white/45 px-8 py-16 text-center transition-colors",
-              isDragActive && "border-[#315b40] bg-[#315b40]/10",
+              "flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-muted/30 px-8 py-16 text-center transition-colors duration-200",
+              isDragActive && "border-primary bg-primary/5",
               isSubmitting && "pointer-events-none opacity-50"
             )}
           >
@@ -247,7 +240,7 @@ export function IngestWizard() {
             </p>
           </div>
         ) : (
-          <form onSubmit={handleUrlSubmit} className="flex flex-col gap-5">
+          <form onSubmit={handleUrlSubmit} className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <Input
                 type="url"
@@ -291,39 +284,39 @@ function PipelineMonitor({
   docId: string | null;
 }) {
   const copy = STATUS_COPY[status];
+  const isFailed = status === "failed";
+  const isCompleted = status === "completed";
 
   return (
-    <div className="flex items-start gap-4 border border-[#d6cdbd] bg-white/60 px-5 py-4">
+    <Alert
+      variant={isFailed ? "destructive" : "default"}
+      className={cn(
+        isCompleted && "border-success/30 bg-success/5 text-foreground"
+      )}
+    >
       <StatusIcon status={status} />
-      <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium text-foreground">{copy.title}</p>
-        <p className="text-xs text-muted-foreground">{copy.description}</p>
+      <AlertTitle>{copy.title}</AlertTitle>
+      <AlertDescription className="flex flex-col gap-1">
+        <span>{copy.description}</span>
         {docId && (
-          <p className="font-mono text-[0.625rem] text-muted-foreground">
+          <span className="font-mono text-[0.625rem] text-muted-foreground">
             {docId}
-          </p>
+          </span>
         )}
-      </div>
-    </div>
+      </AlertDescription>
+    </Alert>
   );
 }
 
 function StatusIcon({ status }: { status: Exclude<PipelineStatus, "idle"> }) {
   switch (status) {
     case "pending":
-      return <Spinner className="mt-0.5 size-5 text-amber-500" />;
+      return <Spinner className="text-warning" />;
     case "processing":
-      return <Spinner className="mt-0.5 size-5 text-primary" />;
+      return <Spinner className="text-primary" />;
     case "completed":
-      return (
-        <CheckCircle weight="fill" className="mt-0.5 size-5 text-emerald-500" />
-      );
+      return <CheckCircle weight="fill" className="text-success" />;
     case "failed":
-      return (
-        <WarningCircle
-          weight="fill"
-          className="mt-0.5 size-5 text-destructive"
-        />
-      );
+      return <WarningCircle weight="fill" />;
   }
 }

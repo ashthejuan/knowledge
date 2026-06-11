@@ -1,284 +1,774 @@
-# UI Style Guide
-
-Reference template for the Knowledge Base frontend. All UI work must follow these conventions.
-
-![Design Reference](./assets/c__Users_ashth_AppData_Roaming_Cursor_User_workspaceStorage_3a2c51b0c590393fe9dd67d09eaf38c1_images_Screenshot_2026-06-02_151515-b8599400-5297-48da-9b35-ce0f41f7d7b0.png)
-
-## Stack
-
-| Layer          | Technology                                  |
-| -------------- | ------------------------------------------- |
-| Framework      | Next.js 16 (App Router, React Server Components) |
-| Styling        | Tailwind CSS v4 (`@theme inline` blocks)    |
-| Components     | shadcn/ui (Radix primitives, Mira style)    |
-| Icons          | Phosphor (`@phosphor-icons/react`)          |
-| Package runner | `npm` / `npx shadcn@latest`                |
-
-## Preset
-
-| Setting       | Value            |
-| ------------- | ---------------- |
-| Style         | Mira             |
-| Base          | Radix            |
-| Base Color    | Mist             |
-| Theme         | Indigo           |
-| Chart Color   | Indigo           |
-| Heading Font  | Merriweather     |
-| Body Font     | Merriweather     |
-| Radius        | Default          |
-| Menu Color    | Default          |
-| Menu Accent   | Subtle           |
-| Preset Code   | `b38oTUyJk`      |
-
-Apply or restore the preset with:
-
-```bash
-npx shadcn@latest apply b38oTUyJk
-```
-
-## Color System
-
-Use **semantic tokens only** — never raw color values like `bg-blue-500` or `text-gray-400`.
-
-### Core Tokens
-
-| Purpose              | Token                      |
-| -------------------- | -------------------------- |
-| Page background      | `bg-background`            |
-| Primary text         | `text-foreground`          |
-| Muted/secondary text | `text-muted-foreground`    |
-| Card surface         | `bg-card`                  |
-| Card text            | `text-card-foreground`     |
-| Primary accent       | `bg-primary` / `text-primary` |
-| On primary           | `text-primary-foreground`  |
-| Secondary surface    | `bg-secondary`             |
-| Borders              | `border-border`            |
-| Input borders        | `border-input`             |
-| Focus ring           | `ring-ring`                |
-| Destructive actions  | `bg-destructive` / `text-destructive` |
-
-### Status Colors
-
-Use `Badge` variants or semantic classes — never hardcoded hex/tailwind colors.
-
-| Status    | Approach                              |
-| --------- | ------------------------------------- |
-| Positive  | `<Badge variant="secondary">` or semantic success token |
-| Negative  | `<Badge variant="destructive">`       |
-| Neutral   | `<Badge variant="outline">`           |
-| Info      | `<Badge variant="default">`           |
-
-### Dark Mode
-
-The template is a **dark-first design**. Do not add manual `dark:` overrides — the semantic tokens handle both modes automatically. The Mist base color provides the grey tint spectrum.
-
-## Typography
-
-| Element          | Font           | Weight    | Class Guidance                                   |
-| ---------------- | -------------- | --------- | ------------------------------------------------ |
-| Headings (h1-h4) | Merriweather   | Semibold+ | `font-heading` with `text-3xl`/`2xl`/`xl`/`lg`  |
-| Body text        | Merriweather   | Regular   | `font-body` or default sans                      |
-| Mono / code      | Geist Mono     | Regular   | `font-mono`                                      |
-| Small labels     | Merriweather   | Medium    | `text-sm text-muted-foreground`                  |
-| Large numbers    | Merriweather   | Bold      | `text-4xl font-bold tracking-tight`              |
-
-Keep hierarchy clear: one `h1` per page, use `text-muted-foreground` for supporting text, and `text-foreground` for primary content.
-
-## Layout Patterns
-
-### Page Structure
-
-```
-┌─────────────────────────────────────────────┐
-│  Sidebar  │         Main Content            │
-│  (fixed)  │  ┌──────┐ ┌──────┐ ┌──────┐    │
-│           │  │ Card │ │ Card │ │ Card │    │
-│  nav      │  └──────┘ └──────┘ └──────┘    │
-│  items    │  ┌────────────────────────────┐  │
-│           │  │      Full-width Card       │  │
-│           │  └────────────────────────────┘  │
-└─────────────────────────────────────────────┘
-```
-
-- Use `Sidebar` component for navigation
-- Main content area uses responsive grid: `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4`
-- Each content section is a `Card`
-- Full-width sections span columns: `col-span-full` or `md:col-span-2`
-
-### Spacing
-
-Always use `gap-*` with flex/grid — never `space-x-*` or `space-y-*`.
-
-| Context                 | Gap        |
-| ----------------------- | ---------- |
-| Between cards in grid   | `gap-4`    |
-| Inside card content     | `gap-3`    |
-| Between form fields     | `gap-4`    |
-| Inline items (row)      | `gap-2`    |
-| Page padding            | `p-4` to `p-6` |
-| Section vertical rhythm | `gap-6`    |
-
-### Cards
-
-Use full `Card` composition for every content block:
-
-```tsx
-<Card>
-  <CardHeader>
-    <CardTitle>Section Title</CardTitle>
-    <CardDescription>Supporting text</CardDescription>
-  </CardHeader>
-  <CardContent>
-    {/* Content here */}
-  </CardContent>
-  <CardFooter>
-    {/* Actions here */}
-  </CardFooter>
-</Card>
-```
-
-Cards are the primary container for everything: charts, forms, tables, stats, settings panels.
-
-## Component Conventions
-
-### Buttons
-
-```tsx
-<Button>Primary Action</Button>
-<Button variant="secondary">Secondary</Button>
-<Button variant="outline">Tertiary</Button>
-<Button variant="ghost">Ghost</Button>
-<Button variant="destructive">Danger</Button>
-```
-
-Icons in buttons always use `data-icon`:
-
-```tsx
-<Button>
-  <PlusIcon data-icon="inline-start" />
-  Add Item
-</Button>
-```
-
-Never add sizing classes to icons inside components — the component handles sizing via CSS.
-
-### Forms
-
-Use `FieldGroup` and `Field` for layout, not raw divs:
-
-```tsx
-<FieldGroup>
-  <Field>
-    <FieldLabel htmlFor="amount">Amount to Invest</FieldLabel>
-    <Input id="amount" type="number" placeholder="$ 1,000.00" />
-  </Field>
-  <Field>
-    <FieldLabel htmlFor="type">Order Type</FieldLabel>
-    <Select>
-      <SelectTrigger id="type">
-        <SelectValue placeholder="Market Order" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          <SelectItem value="market">Market Order</SelectItem>
-          <SelectItem value="limit">Limit Order</SelectItem>
-        </SelectGroup>
-      </SelectContent>
-    </Select>
-  </Field>
-</FieldGroup>
-```
-
-Validation uses `data-invalid` on `Field` and `aria-invalid` on the control.
-
-### Tables
-
-Use the `Table` component for transaction lists and tabular data:
-
-```tsx
-<Table>
-  <TableHeader>
-    <TableRow>
-      <TableHead>Description</TableHead>
-      <TableHead>Date</TableHead>
-      <TableHead className="text-right">Amount</TableHead>
-    </TableRow>
-  </TableHeader>
-  <TableBody>
-    <TableRow>
-      <TableCell>Blue Bottle Coffee</TableCell>
-      <TableCell className="text-muted-foreground">Today, 10:24 AM</TableCell>
-      <TableCell className="text-right">-$6.50</TableCell>
-    </TableRow>
-  </TableBody>
-</Table>
-```
-
-### Charts
-
-Charts use the Indigo palette. Wrap Recharts with the `Chart` component. Bar charts and progress indicators are the primary visualization types in this template.
-
-### Overlays
-
-| Need              | Component     |
-| ----------------- | ------------- |
-| Modal dialog      | `Dialog`      |
-| Side panel        | `Sheet`       |
-| Bottom sheet      | `Drawer`      |
-| Confirmation      | `AlertDialog` |
-| Toast / feedback  | `sonner`      |
-
-Every overlay must include a `Title` component (use `className="sr-only"` if visually hidden).
-
-### Navigation
-
-- `Sidebar` for primary nav (left rail)
-- `Tabs` for in-page section switching (e.g., Overview / Payments tabs)
-- `Breadcrumb` for hierarchical context
-- Active nav items use the primary accent color
-
-### Empty & Loading States
-
-- Use `Skeleton` for loading placeholders
-- Use `Empty` for zero-data states
-- Use `Spinner` for inline loading indicators
-
-## Sizing Shortcuts
-
-- Equal width/height: use `size-*` (e.g., `size-10`) not `w-10 h-10`
-- Truncation: use `truncate` not `overflow-hidden text-ellipsis whitespace-nowrap`
-- Conditional classes: use `cn()` from `@/lib/utils` not template literal ternaries
-
-## Imports
-
-Use the `@/` alias for all project imports:
-
-```tsx
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-```
-
-Icons come from Phosphor:
-
-```tsx
-import { Plus, MagnifyingGlass, Gear } from "@phosphor-icons/react"
-```
-
-## React Server Components
-
-This project uses `rsc: true`. Any component that uses `useState`, `useEffect`, event handlers, or browser APIs needs `"use client"` at the top of the file. Server Components are the default.
-
-## Do / Don't Quick Reference
-
-| Do                                           | Don't                                        |
-| -------------------------------------------- | -------------------------------------------- |
-| `bg-primary`, `text-muted-foreground`        | `bg-indigo-600`, `text-gray-400`             |
-| `flex flex-col gap-4`                        | `space-y-4`                                  |
-| `size-10`                                    | `w-10 h-10`                                  |
-| `<Badge variant="secondary">`               | `<span className="text-emerald-600">`        |
-| `<Separator />`                              | `<hr>` or `<div className="border-t">`       |
-| `<Skeleton />`                               | Custom `animate-pulse` div                   |
-| `cn("base", condition && "extra")`           | `` `base ${condition ? "extra" : ""}` ``     |
-| `<Alert>` for callouts                       | Custom styled div for notices                |
-| `toast()` from sonner                        | Custom toast implementation                  |
-| Icons with `data-icon` in buttons            | Manual icon sizing classes inside components |
+# Aether Design System
+
+## Visual Design Philosophy & Foundation
+
+Version 1.0
+
+---
+
+# Core Philosophy
+
+Build software that feels:
+
+* Intelligent, not complicated
+* Premium, not luxurious
+* Technical, not intimidating
+* Fast, not rushed
+* Minimal, not empty
+* Powerful, not overwhelming
+
+Every interface should communicate:
+
+> "This product is extremely capable, but effortlessly understandable."
+
+Users should never feel like they are learning software.
+
+They should feel like they are extending their own intelligence.
+
+---
+
+# Design Principles
+
+## 1. Clarity Above Decoration
+
+Every element must earn its existence.
+
+Before adding an element, ask:
+
+* Does it improve understanding?
+* Does it improve navigation?
+* Does it improve confidence?
+
+If not, remove it.
+
+Visual simplicity is not a style.
+It is a performance optimization for human cognition.
+
+---
+
+## 2. Density Without Clutter
+
+Interfaces should contain large amounts of information while remaining easy to scan.
+
+Achieve this through:
+
+* Strong typography hierarchy
+* Generous spacing
+* Clear grouping
+* Progressive disclosure
+* Consistent alignment
+
+Never hide information that users need frequently.
+
+Never show information users do not currently need.
+
+---
+
+## 3. Intelligent Hierarchy
+
+The eye should naturally move:
+
+1. Headline
+2. Key action
+3. Important content
+4. Supporting content
+5. Metadata
+
+No interface should require visual searching.
+
+The layout itself should guide attention.
+
+---
+
+## 4. Progressive Complexity
+
+Begin simple.
+
+Reveal power gradually.
+
+Basic users should succeed immediately.
+
+Advanced users should discover increasing depth over time.
+
+The interface should grow with expertise.
+
+---
+
+## 5. Trust Through Precision
+
+Every interaction should feel deliberate.
+
+Avoid:
+
+* Ambiguous labels
+* Unclear states
+* Decorative animations
+* Excessive motion
+
+Favor:
+
+* Predictability
+* Consistency
+* Transparency
+* Explicit feedback
+
+---
+
+# Brand Personality
+
+The brand should feel:
+
+| Trait        | Level     |
+| ------------ | --------- |
+| Intelligent  | Very High |
+| Trustworthy  | Very High |
+| Technical    | High      |
+| Human        | Medium    |
+| Playful      | Low       |
+| Corporate    | Medium    |
+| Premium      | High      |
+| Experimental | Medium    |
+
+The emotional response should be:
+
+> Calm confidence.
+
+Not excitement.
+
+Not hype.
+
+Not disruption.
+
+Confidence.
+
+---
+
+# Visual Language
+
+## Aesthetic Direction
+
+Combine:
+
+* Stripe's editorial sophistication
+* Ramp's operational clarity
+* Cursor's focus
+* Mistral's technical elegance
+* ElevenLabs' modernity
+* Exa's research-oriented intelligence
+
+Result:
+
+A modern infrastructure aesthetic.
+
+---
+
+# Color Philosophy
+
+## Primary Palette
+
+Use a restrained palette.
+
+### Foundation Colors
+
+Background:
+
+* #FFFFFF
+
+Surface:
+
+* #FAFAFA
+
+Surface Elevated:
+
+* #FFFFFF
+
+Border:
+
+* #E5E7EB
+
+Text Primary:
+
+* #111827
+
+Text Secondary:
+
+* #6B7280
+
+Text Tertiary:
+
+* #9CA3AF
+
+---
+
+## Accent Color
+
+Use a single primary accent.
+
+Recommended:
+
+* Indigo (#4F46E5)
+* Electric Blue (#2563EB)
+
+Accent usage:
+
+* Primary buttons
+* Focus states
+* Links
+* Key metrics
+* Active navigation
+
+Accent colors should occupy less than 10% of the screen.
+
+---
+
+## Semantic Colors
+
+Success:
+
+* #10B981
+
+Warning:
+
+* #F59E0B
+
+Error:
+
+* #EF4444
+
+Info:
+
+* #3B82F6
+
+Use sparingly.
+
+---
+
+# Gradients
+
+Gradients are atmospheric.
+
+Never informational.
+
+Purpose:
+
+* Brand moments
+* Hero sections
+* Empty states
+* Marketing pages
+
+Avoid:
+
+* Gradient buttons
+* Gradient text
+* Gradient cards
+
+Preferred:
+
+Soft mesh gradients with low opacity.
+
+---
+
+# Typography System
+
+## Font Stack
+
+Primary:
+
+Inter
+
+Fallback:
+
+system-ui, sans-serif
+
+Alternative Premium Stack:
+
+Inter + Geist
+
+---
+
+# Type Scale
+
+Display XL
+
+* 72px
+* 700
+
+Display L
+
+* 56px
+* 700
+
+Display M
+
+* 48px
+* 700
+
+Heading XL
+
+* 40px
+* 600
+
+Heading L
+
+* 32px
+* 600
+
+Heading M
+
+* 24px
+* 600
+
+Heading S
+
+* 20px
+* 600
+
+Body L
+
+* 18px
+* 400
+
+Body M
+
+* 16px
+* 400
+
+Body S
+
+* 14px
+* 400
+
+Caption
+
+* 12px
+* 500
+
+---
+
+# Typography Rules
+
+Use typography instead of visual decoration.
+
+Create hierarchy through:
+
+* Size
+* Weight
+* Spacing
+* Alignment
+
+Avoid:
+
+* Underlines
+* Excessive bolding
+* Multiple font families
+* Decorative type treatments
+
+Maximum weights:
+
+* 400
+* 500
+* 600
+* 700
+
+Nothing heavier.
+
+---
+
+# Layout System
+
+## Grid
+
+Desktop:
+
+* 12 columns
+
+Tablet:
+
+* 8 columns
+
+Mobile:
+
+* 4 columns
+
+---
+
+# Spacing Scale
+
+4
+8
+12
+16
+24
+32
+48
+64
+96
+128
+
+No arbitrary spacing.
+
+Every margin and padding must come from the scale.
+
+---
+
+# Content Width
+
+Maximum readable width:
+
+720px
+
+Marketing width:
+
+1200px
+
+Dashboard width:
+
+1440px
+
+Never allow text blocks wider than 720px.
+
+---
+
+# Component Philosophy
+
+## Buttons
+
+Primary:
+
+* Filled
+* Single accent color
+
+Secondary:
+
+* Neutral outline
+
+Tertiary:
+
+* Text only
+
+Rules:
+
+* One primary action per section
+* Maximum two button styles visible simultaneously
+
+---
+
+## Inputs
+
+Characteristics:
+
+* Minimal
+* Clear borders
+* High contrast text
+* Large click targets
+
+Avoid:
+
+* Fancy styling
+* Heavy shadows
+* Decorative icons
+
+---
+
+## Cards
+
+Cards are containers.
+
+Not decorations.
+
+Rules:
+
+* Subtle border
+* Minimal shadow
+* Consistent padding
+
+Avoid:
+
+* Large shadows
+* Glassmorphism
+* Floating effects
+
+---
+
+## Tables
+
+Inspired by enterprise software.
+
+Requirements:
+
+* Excellent scanability
+* Sticky headers
+* Row hover states
+* Keyboard support
+
+Data density is encouraged.
+
+Visual clutter is not.
+
+---
+
+# Motion System
+
+## Philosophy
+
+Motion communicates.
+
+Motion does not entertain.
+
+---
+
+## Duration
+
+Micro:
+100ms
+
+Standard:
+200ms
+
+Complex:
+300ms
+
+Maximum:
+400ms
+
+---
+
+## Easing
+
+Use smooth acceleration and deceleration.
+
+Avoid:
+
+* Bounce
+* Elastic effects
+* Excessive spring animations
+
+---
+
+# Dashboard Design
+
+## Rules
+
+Dashboards should prioritize:
+
+1. Search
+2. Navigation
+3. Actions
+4. Data
+5. Configuration
+
+Not the other way around.
+
+---
+
+## Information Density
+
+Aim for:
+
+* High density
+* High readability
+
+A dashboard should feel powerful.
+
+Never empty.
+
+Never crowded.
+
+---
+
+# AI Product Design Principles
+
+## AI Must Feel Deterministic
+
+Users should always know:
+
+* What happened
+* Why it happened
+* What is happening now
+* What will happen next
+
+Never create mystery.
+
+---
+
+## Transparency
+
+Show:
+
+* Sources
+* Citations
+* Confidence
+* Processing status
+
+Trust is a feature.
+
+---
+
+## Streaming
+
+Whenever possible:
+
+* Stream output
+* Stream progress
+* Stream reasoning summaries
+
+Waiting without feedback is unacceptable.
+
+---
+
+# Empty States
+
+Every empty state should:
+
+* Explain current state
+* Explain value
+* Suggest next action
+
+Avoid illustrations unless meaningful.
+
+---
+
+# Navigation
+
+Hierarchy:
+
+Global Navigation
+→ Section Navigation
+→ Local Navigation
+
+Maximum navigation depth:
+
+3 levels
+
+Anything deeper requires redesign.
+
+---
+
+# Accessibility
+
+Minimum standards:
+
+* WCAG AA
+* Keyboard navigable
+* Visible focus states
+* Semantic HTML
+* Screen reader support
+
+Accessibility is not optional.
+
+---
+
+# Visual Effects
+
+Allowed:
+
+* Soft shadows
+* Low-opacity gradients
+* Subtle blur
+* Micro interactions
+
+Avoid:
+
+* Glassmorphism
+* Neomorphism
+* Excessive parallax
+* Excessive animations
+* Decorative particle systems
+
+---
+
+# Illustration Style
+
+If illustrations are used:
+
+* Geometric
+* Technical
+* Minimal
+* Purposeful
+
+Avoid:
+
+* Cartoon styles
+* Mascots
+* Overly playful graphics
+
+---
+
+# Marketing Page Philosophy
+
+Every page should answer:
+
+1. What is this?
+2. Why should I care?
+3. Why should I trust it?
+4. How does it work?
+5. What should I do next?
+
+No section should exist without answering one of those questions.
+
+---
+
+# Design Quality Checklist
+
+Before shipping any screen:
+
+□ Can users understand it in 5 seconds?
+□ Is there a clear primary action?
+□ Is the hierarchy obvious?
+□ Is spacing consistent?
+□ Is typography doing the heavy lifting?
+□ Is motion purposeful?
+□ Is accessibility maintained?
+□ Is trust reinforced?
+□ Is unnecessary decoration removed?
+□ Does it feel calm, intelligent, and premium?
+
+If any answer is no, redesign.
+
+---
+
+# Visual Design Philosophy Rules
+
+Inspired by modern infrastructure companies, AI-native products, and premium SaaS experiences.
+
+## The Stripe Rule
+
+Use elegance to simplify complexity.
+
+## The Ramp Rule
+
+Use structure to make dense information usable.
+
+## The Cursor Rule
+
+Remove everything that distracts from work.
+
+## The Exa Rule
+
+Make intelligence visible.
+
+## The ElevenLabs Rule
+
+Make advanced technology feel approachable.
+
+## The Mistral Rule
+
+Communicate technical excellence through restraint.
+
+## The Anto Rule
+
+Maintain humanity beneath sophistication.
+
+---
+
+# Final Design Test
+
+When a user opens the application for the first time, they should think:
+
+> "This feels like software built by people who deeply understand both design and engineering."
+
+Not flashy.
+
+Not trendy.
+
+Simply exceptional.

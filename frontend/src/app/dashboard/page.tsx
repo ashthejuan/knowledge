@@ -29,33 +29,26 @@ export default async function DashboardPage() {
       />
 
       <WorkspaceSection>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <Button
-            asChild
-            variant="outline"
-            className="h-auto flex-col items-start gap-3 border-dashed bg-white/50 p-8 text-left backdrop-blur"
-          >
-            <Link href="/ingest">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <Button asChild variant="outline" className="h-auto p-0">
+            <Link href="/ingest" className="flex w-full flex-col items-start gap-2 p-6 text-left">
               <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 <UploadSimple weight="duotone" data-icon="inline-start" />
                 Ingest Documents
               </span>
-              <span className="text-xs/relaxed font-normal text-muted-foreground">
+              <span className="text-xs font-normal text-muted-foreground">
                 Drag and drop files to extract entities and grow the graph.
               </span>
             </Link>
           </Button>
 
-          <Button
-            asChild
-            className="h-auto flex-col items-start gap-3 p-8 text-left"
-          >
-            <Link href="/chat">
+          <Button asChild className="h-auto p-0">
+            <Link href="/chat" className="flex w-full flex-col items-start gap-2 p-6 text-left">
               <span className="flex items-center gap-2 text-sm font-semibold">
                 <ChatCircleText weight="duotone" data-icon="inline-start" />
                 Launch GraphRAG Chat
               </span>
-              <span className="text-xs/relaxed font-normal text-primary-foreground/80">
+              <span className="text-xs font-normal text-primary-foreground/80">
                 Ask grounded questions across your unified vector context.
               </span>
             </Link>

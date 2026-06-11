@@ -33,24 +33,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#f4efe4] text-[#18221b]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_10%,rgba(20,91,61,0.22),transparent_27%),radial-gradient(circle_at_86%_12%,rgba(208,119,55,0.18),transparent_24%),linear-gradient(135deg,rgba(255,255,255,0.9),rgba(244,239,228,0.76))]" />
-      <div className="pointer-events-none absolute -right-24 bottom-0 h-96 w-96 bg-[#d07737]/10 blur-3xl" />
-      <header className="sticky top-0 z-20 border-b border-white/70 bg-white/62 shadow-sm shadow-[#315b40]/5 backdrop-blur-xl">
-        <div className="container mx-auto flex min-h-20 flex-col gap-4 px-6 py-4 sm:px-8 md:flex-row md:items-center md:justify-between md:py-5 lg:px-10">
-          <Link
-            href="/dashboard"
-            className="flex w-fit flex-col border border-[#18221b]/15 bg-white/55 px-5 py-3 shadow-sm backdrop-blur"
-          >
-            <span className="text-xs font-semibold uppercase tracking-[0.22em] text-[#315b40]">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <header className="sticky top-0 z-20 border-b border-border bg-background">
+        <div className="container mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-4 px-6 lg:px-8">
+          <Link href="/dashboard" className="flex flex-col gap-0.5">
+            <span className="text-sm font-semibold text-foreground">
               Knowledge Base
             </span>
-            <span className="text-[0.7rem] text-[#647067]">
+            <span className="text-xs text-muted-foreground">
               Graph memory workspace
             </span>
           </Link>
 
-          <nav className="flex items-center gap-2 overflow-x-auto overflow-y-hidden">
+          <nav className="flex items-center gap-1 overflow-x-auto overflow-y-hidden">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
@@ -61,10 +56,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   asChild
                   variant={isActive ? "secondary" : "ghost"}
                   size="sm"
-                  className={cn(
-                    "h-10 shrink-0 px-4 text-xs uppercase tracking-[0.14em]",
-                    isActive && "border-[#315b40]/20 bg-white/75 text-[#18221b]"
-                  )}
+                  className={cn("h-9 shrink-0 px-3 text-sm font-medium")}
                 >
                   <Link
                     href={item.href}
@@ -79,7 +71,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-3">
-            <span className="hidden max-w-48 truncate text-xs text-[#647067] lg:inline">
+            <span className="hidden max-w-48 truncate text-xs text-muted-foreground lg:inline">
               {session?.user?.email ?? session?.user?.name}
             </span>
             <Button
@@ -95,7 +87,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="relative z-10 flex-1">{children}</main>
+      <main className="flex-1">{children}</main>
     </div>
   );
 }

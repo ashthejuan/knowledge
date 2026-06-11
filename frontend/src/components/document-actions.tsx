@@ -150,7 +150,7 @@ export function DocumentActions({
             <AlertDialogDescription>
               {isDeleteConfirm ? (
                 <>
-                  <span className="font-medium text-[#18221b]">
+                  <span className="font-medium text-foreground">
                     &ldquo;{label}&rdquo;
                   </span>{" "}
                   will be removed from the database. This cannot be
@@ -158,7 +158,7 @@ export function DocumentActions({
                 </>
               ) : (
                 <>
-                  <span className="font-medium text-[#18221b]">
+                  <span className="font-medium text-foreground">
                     &ldquo;{label}&rdquo;
                   </span>{" "}
                   will stop indexing but remain in your library.
@@ -171,12 +171,8 @@ export function DocumentActions({
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
+              variant={isDeleteConfirm ? "destructive" : "default"}
               disabled={pendingAction !== null}
-              className={
-                isDeleteConfirm
-                  ? "border-transparent bg-red-600 text-white hover:bg-red-700"
-                  : undefined
-              }
               onClick={() => {
                 if (confirmAction) {
                   void executeAction(confirmAction);

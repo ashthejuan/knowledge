@@ -19,6 +19,7 @@ import {
 } from "@/components/workspace-layout";
 import { requireAuth } from "@/lib/require-auth";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -27,6 +28,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 
 const BACKEND_API_URL = process.env.BACKEND_API_URL ?? "http://localhost:8000";
 
@@ -105,7 +114,7 @@ export default async function ProfilePage() {
               Details from the active authenticated session.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-5">
+          <CardContent className="flex flex-col gap-4">
             <ProfileField
               icon={UserRound}
               label="Name"
@@ -116,12 +125,6 @@ export default async function ProfilePage() {
               label="Email"
               value={session.user?.email ?? "Not provided"}
             />
-            {/* <ProfileField
-              icon={FileText}
-              label="User ID"
-              value={session.user?.id ?? "Unavailable"}
-              mono
-            /> */}
           </CardContent>
         </Card>
 
@@ -148,7 +151,7 @@ export default async function ProfilePage() {
       </WorkspaceSection>
 
       <Card>
-        <CardHeader className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <CardTitle>Uploaded Sources</CardTitle>
             <CardDescription>
@@ -164,42 +167,46 @@ export default async function ProfilePage() {
         </CardHeader>
         <CardContent>
           {documents.length === 0 ? (
-            <div className="flex min-h-56 flex-col items-center justify-center gap-4 border border-dashed border-[#d6cdbd] bg-white/45 p-8 text-center">
-              <FileText className="text-muted-foreground" />
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-medium">No sources uploaded yet</p>
-                <p className="text-xs text-muted-foreground">
+            <Empty className="min-h-56 border-border">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <FileText />
+                </EmptyMedia>
+                <EmptyTitle>No sources uploaded yet</EmptyTitle>
+                <EmptyDescription>
                   Add a PDF or URL to populate your profile library.
-                </p>
-              </div>
-              <Button asChild variant="outline" size="sm">
-                <Link href="/ingest">Open ingest</Link>
-              </Button>
-            </div>
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/ingest">Open ingest</Link>
+                </Button>
+              </EmptyContent>
+            </Empty>
           ) : (
-            <div className="overflow-x-auto border border-[#d6cdbd]">
+            <div className="max-h-[480px] overflow-auto rounded-lg border border-border">
               <table className="w-full min-w-[840px] border-collapse text-sm">
-                <thead className="bg-white/60 text-left text-xs uppercase tracking-[0.14em] text-[#647067]">
+                <thead className="sticky top-0 z-10 border-b border-border bg-muted text-left text-xs font-medium text-muted-foreground">
                   <tr>
-                    <th className="px-5 py-4 font-medium">Source</th>
-                    <th className="px-5 py-4 font-medium">Type</th>
-                    <th className="px-5 py-4 font-medium">Status</th>
-                    <th className="px-5 py-4 font-medium">Uploaded</th>
-                    <th className="px-5 py-4 font-medium">Updated</th>
-                    <th className="px-5 py-4 font-medium">Actions</th>
+                    <th className="px-4 py-3">Source</th>
+                    <th className="px-4 py-3">Type</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Uploaded</th>
+                    <th className="px-4 py-3">Updated</th>
+                    <th className="px-4 py-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {documents.map((document) => (
-                    <tr key={document.id} className="border-t">
-                      <td className="max-w-md px-5 py-4">
+                    <tr
+                      key={document.id}
+                      className="border-b border-border transition-colors duration-200 hover:bg-muted/50"
+                    >
+                      <td className="max-w-md px-4 py-3">
                         <div className="flex flex-col gap-1.5">
                           <span className="truncate font-medium">
                             {getDisplayName(document)}
                           </span>
-                          {/* <span className="truncate font-mono text-xs text-muted-foreground">
-                            {document.id}
-                          </span> */}
                           {document.source_url ? (
                             <a
                               href={document.source_url}
@@ -213,19 +220,19 @@ export default async function ProfilePage() {
                           ) : null}
                         </div>
                       </td>
-                      <td className="px-5 py-4 capitalize">
+                      <td className="px-4 py-3 capitalize">
                         {document.source_type}
                       </td>
-                      <td className="px-5 py-4">
-                        <StatusPill status={document.status} />
+                      <td className="px-4 py-3">
+                        <StatusBadge status={document.status} />
                       </td>
-                      <td className="px-5 py-4 text-muted-foreground">
+                      <td className="px-4 py-3 text-muted-foreground">
                         {formatDate(document.created_at)}
                       </td>
-                      <td className="px-5 py-4 text-muted-foreground">
+                      <td className="px-4 py-3 text-muted-foreground">
                         {formatDate(document.updated_at)}
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-4 py-3">
                         <DocumentActions
                           documentId={document.id}
                           status={document.status}
@@ -256,12 +263,10 @@ function ProfileField({
   mono?: boolean;
 }) {
   return (
-    <div className="flex items-start gap-4 border border-[#d6cdbd] bg-white/45 p-4">
+    <div className="flex items-start gap-4 rounded-lg border border-border bg-muted/30 p-4">
       <Icon className="mt-0.5 text-muted-foreground" />
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium uppercase text-muted-foreground">
-          {label}
-        </p>
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
         <p className={cn("truncate text-sm font-medium", mono && "font-mono")}>
           {value}
         </p>
@@ -272,28 +277,30 @@ function ProfileField({
 
 function Metric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="border border-[#d6cdbd] bg-white/45 p-5">
+    <div className="rounded-lg border border-border bg-muted/30 p-4">
       <p className="text-2xl font-semibold tracking-tight">{value}</p>
       <p className="text-xs text-muted-foreground">{label}</p>
     </div>
   );
 }
 
-function StatusPill({ status }: { status: string }) {
+function StatusBadge({ status }: { status: string }) {
   const Icon =
     status === "completed" ? CheckCircle2 : status === "failed" ? XCircle : Clock3;
 
+  const variant =
+    status === "completed"
+      ? "default"
+      : status === "failed"
+        ? "destructive"
+        : status === "cancelled"
+          ? "outline"
+          : "secondary";
+
   return (
-    <span className="inline-flex items-center gap-1.5 border border-[#d6cdbd] bg-white/60 px-3 py-1.5 text-xs font-medium capitalize">
-      <Icon
-        className={cn(
-          status === "completed" && "text-primary",
-          status === "failed" && "text-destructive",
-          status === "cancelled" && "text-muted-foreground",
-          !["completed", "failed"].includes(status) && "text-muted-foreground"
-        )}
-      />
+    <Badge variant={variant} className="capitalize">
+      <Icon data-icon="inline-start" />
       {status}
-    </span>
+    </Badge>
   );
 }

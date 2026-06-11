@@ -23,6 +23,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -37,8 +44,6 @@ export function ChatInterface() {
 
   const viewportRef = useRef<HTMLDivElement>(null);
 
-  // Smoothly track printing tokens by pinning the viewport to the bottom
-  // whenever the message array changes (new turn or streamed content).
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
@@ -66,7 +71,6 @@ export function ChatInterface() {
       timestamp: new Date(),
     };
 
-    // History must reflect only the turns that preceded this exchange.
     const history = messages;
 
     setMessages((prev) => [...prev, userMessage, assistantPlaceholder]);
@@ -75,8 +79,6 @@ export function ChatInterface() {
 
     try {
       for await (const token of streamChatResponse(trimmed, history)) {
-        // Mutate only the placeholder's content via its unique id so the rest
-        // of the array stays referentially stable and does not flash.
         setMessages((prev) =>
           prev.map((message) =>
             message.id === assistantId
@@ -96,7 +98,7 @@ export function ChatInterface() {
   }
 
   return (
-    <Card className="flex h-[640px] flex-col bg-white/78">
+    <Card className="flex h-[640px] flex-col">
       <CardHeader className="border-b">
         <CardTitle className="flex items-center gap-3">
           <Robot weight="duotone" className="size-4 text-primary" />
@@ -109,16 +111,18 @@ export function ChatInterface() {
         className="flex flex-1 flex-col gap-5 overflow-y-auto"
       >
         {messages.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
-            <Robot weight="duotone" className="size-8 text-muted-foreground" />
-            <p className="text-sm font-medium text-foreground">
-              Ask anything about your knowledge base
-            </p>
-            <p className="max-w-sm text-xs/relaxed text-muted-foreground">
-              Responses are grounded in unified vector context and
-              cross-referenced graph assets.
-            </p>
-          </div>
+          <Empty className="flex-1 border-none">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <Robot weight="duotone" />
+              </EmptyMedia>
+              <EmptyTitle>Ask anything about your knowledge base</EmptyTitle>
+              <EmptyDescription>
+                Responses are grounded in unified vector context and
+                cross-referenced graph assets.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         ) : (
           messages.map((message) => (
             <MessageBubble
@@ -177,10 +181,10 @@ function MessageBubble({
     >
       <span
         className={cn(
-          "flex size-7 shrink-0 items-center justify-center border",
+          "flex size-7 shrink-0 items-center justify-center rounded-md border",
           isUser
-            ? "border-[#315b40] bg-[#315b40] text-white"
-            : "border-[#d6cdbd] bg-white/70 text-[#315b40]"
+            ? "border-primary bg-primary text-primary-foreground"
+            : "border-border bg-muted text-primary"
         )}
       >
         {isUser ? (
@@ -192,10 +196,10 @@ function MessageBubble({
 
       <div
         className={cn(
-          "flex max-w-[88%] flex-col gap-2 border px-4 py-3 text-sm shadow-sm",
+          "flex max-w-[88%] flex-col gap-2 rounded-lg border px-4 py-3 text-sm",
           isUser
-            ? "border-[#315b40] bg-[#315b40] text-white"
-            : "border-[#d6cdbd] bg-white/72 text-[#18221b]"
+            ? "border-primary bg-primary text-primary-foreground"
+            : "border-border bg-muted text-foreground"
         )}
       >
         {isStreaming ? (
@@ -282,13 +286,13 @@ function MessageContent({
                 {children}
               </code>
             ) : (
-              <code className="bg-white/70 px-1 py-0.5 font-mono text-[0.85em]">
+              <code className="rounded bg-background px-1 py-0.5 font-mono text-[0.85em]">
                 {children}
               </code>
             );
           },
           pre: ({ children }) => (
-            <pre className="overflow-x-auto border border-[#d6cdbd] bg-white/70 p-3 font-mono text-xs leading-5">
+            <pre className="overflow-x-auto rounded-md border border-border bg-background p-3 font-mono text-xs leading-5">
               {children}
             </pre>
           ),
@@ -299,7 +303,7 @@ function MessageContent({
           ),
           hr: () => <div className="my-3 h-px bg-border" />,
           table: ({ children }) => (
-            <div className="my-2 overflow-x-auto border border-[#d6cdbd]">
+            <div className="my-2 overflow-x-auto rounded-md border border-border">
               <table className="w-full border-collapse text-left text-xs">
                 {children}
               </table>

@@ -14,12 +14,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Spinner } from "@/components/ui/spinner";
 
-// `react-force-graph-2d` reaches directly into the DOM and the HTML5 canvas,
-// so it must never run during server rendering. Defer the engine to the
-// browser via a dynamic import with SSR disabled, falling back to the polished
-// skeleton while the chunk streams in.
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
   ssr: false,
   loading: () => <GraphSkeleton />,
@@ -27,6 +30,7 @@ const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
 
 const CANVAS_HEIGHT = 560;
 const GRAPH_VIEW_PADDING = 72;
+const CANVAS_BG = "#111827";
 
 export function KnowledgeGraph() {
   const [graphData, setGraphData] = useState<GraphData>({
@@ -40,8 +44,6 @@ export function KnowledgeGraph() {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<ForceGraphMethods | undefined>(undefined);
 
-  // Pull the adjacency payload from the Neo4j-backed subgraph endpoint once on
-  // mount. The fetcher already normalizes the response to the GraphData shape.
   useEffect(() => {
     let cancelled = false;
 
@@ -69,9 +71,6 @@ export function KnowledgeGraph() {
     };
   }, []);
 
-  // The force graph needs explicit pixel dimensions to stay inside its card.
-  // Track the container width responsively rather than letting it fill the
-  // whole window.
   useEffect(() => {
     const node = containerRef.current;
     if (!node) return;
@@ -116,16 +115,13 @@ export function KnowledgeGraph() {
       <CardContent className="p-0">
         <div
           ref={containerRef}
-          className="relative w-full overflow-hidden bg-[#18221b]"
-          style={{ height: CANVAS_HEIGHT }}
+          className="relative w-full overflow-hidden"
+          style={{ height: CANVAS_HEIGHT, backgroundColor: CANVAS_BG }}
         >
           {isLoading ? (
             <GraphSkeleton />
           ) : error ? (
-            <GraphMessage
-              title="Graph unavailable"
-              description={error}
-            />
+            <GraphMessage title="Graph unavailable" description={error} />
           ) : isEmpty ? (
             <GraphEmptyState />
           ) : (
@@ -142,10 +138,10 @@ export function KnowledgeGraph() {
                   graphRef.current?.zoomToFit(400, GRAPH_VIEW_PADDING)
                 }
                 nodeAutoColorBy="type"
-                linkColor={() => "rgba(214, 205, 189, 0.34)"}
+                linkColor={() => "rgba(148, 163, 184, 0.4)"}
                 linkDirectionalParticles={2}
                 linkDirectionalParticleSpeed={0.005}
-                linkDirectionalParticleColor={() => "rgba(255, 255, 255, 0.78)"}
+                linkDirectionalParticleColor={() => "rgba(248, 250, 252, 0.78)"}
                 nodeCanvasObject={(node, ctx, globalScale) => {
                   const typedNode = node as GraphNode & {
                     x: number;
@@ -159,7 +155,6 @@ export function KnowledgeGraph() {
                       : rawLabel;
                   const radius = 5;
 
-                  // Solid node disc, colored by its group metadata.
                   ctx.beginPath();
                   ctx.arc(
                     typedNode.x,
@@ -169,16 +164,14 @@ export function KnowledgeGraph() {
                     2 * Math.PI,
                     false
                   );
-                  ctx.fillStyle = typedNode.color ?? "rgba(99, 102, 241, 0.9)";
+                  ctx.fillStyle = typedNode.color ?? "rgba(37, 99, 235, 0.9)";
                   ctx.fill();
 
-                  // Plain-text label, offset to the right. Font size scales
-                  // linearly with the zoom factor so text stays legible.
                   const fontSize = 12 / globalScale;
-                  ctx.font = `${fontSize}px Geist, sans-serif`;
+                  ctx.font = `${fontSize}px Inter, sans-serif`;
                   ctx.textAlign = "left";
                   ctx.textBaseline = "middle";
-                  ctx.fillStyle = "rgba(244, 239, 228, 0.92)";
+                  ctx.fillStyle = "#f9fafb";
                   ctx.fillText(label, typedNode.x + radius + 8, typedNode.y);
                 }}
               />
@@ -193,31 +186,32 @@ export function KnowledgeGraph() {
 function GraphSkeleton() {
   return (
     <div
-      className="flex w-full flex-col items-center justify-center gap-4 bg-[#18221b] px-6"
-      style={{ height: CANVAS_HEIGHT }}
+      className="flex w-full flex-col items-center justify-center gap-4 px-6 text-zinc-400"
+      style={{ height: CANVAS_HEIGHT, backgroundColor: CANVAS_BG }}
     >
       <Spinner className="size-8 text-primary" />
-      <p className="text-sm font-medium text-muted-foreground">
-        Rendering knowledge graph…
-      </p>
+      <p className="text-sm font-medium">Rendering knowledge graph…</p>
     </div>
   );
 }
 
 function GraphEmptyState() {
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-4 px-8 py-10 text-center">
-      <span className="flex size-12 items-center justify-center border border-[#d6cdbd] bg-white/60 text-[#315b40]">
-        <UploadSimple weight="duotone" className="size-6" />
-      </span>
-      <p className="text-sm font-medium text-foreground">
-        No graph data yet
-      </p>
-      <p className="max-w-sm text-xs/relaxed text-muted-foreground">
-        Upload documents to extract entities and concepts. Once ingested, their
-        relationships will surface here as an interactive graph.
-      </p>
-    </div>
+    <Empty
+      className="h-full min-h-[560px] border-none text-zinc-300"
+      style={{ backgroundColor: CANVAS_BG }}
+    >
+      <EmptyHeader>
+        <EmptyMedia variant="icon" className="bg-zinc-800 text-zinc-200">
+          <UploadSimple weight="duotone" />
+        </EmptyMedia>
+        <EmptyTitle className="text-zinc-100">No graph data yet</EmptyTitle>
+        <EmptyDescription className="text-zinc-400">
+          Upload documents to extract entities and concepts. Once ingested, their
+          relationships will surface here as an interactive graph.
+        </EmptyDescription>
+      </EmptyHeader>
+    </Empty>
   );
 }
 
@@ -229,11 +223,12 @@ function GraphMessage({
   description: string;
 }) {
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-3 px-8 py-10 text-center">
-      <p className="text-sm font-medium text-foreground">{title}</p>
-      <p className="max-w-sm text-xs/relaxed text-muted-foreground">
-        {description}
-      </p>
+    <div
+      className="flex h-full w-full flex-col items-center justify-center gap-3 px-8 py-10 text-center text-zinc-300"
+      style={{ backgroundColor: CANVAS_BG }}
+    >
+      <p className="text-sm font-medium text-zinc-100">{title}</p>
+      <p className="max-w-sm text-xs/relaxed text-zinc-400">{description}</p>
     </div>
   );
 }
