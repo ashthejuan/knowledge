@@ -1,36 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Monitor, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 
-import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return <Skeleton className="h-9 w-[152px]" />;
-  }
 
   return (
     <ToggleGroup
       type="single"
       variant="outline"
       size="sm"
-      value={theme ?? "light"}
+      value={theme ?? "system"}
       onValueChange={(value) => {
         if (value) {
           setTheme(value);
         }
       }}
     >
+      <ToggleGroupItem value="system" aria-label="System theme">
+        <Monitor data-icon="inline-start" />
+        System
+      </ToggleGroupItem>
       <ToggleGroupItem value="light" aria-label="Light mode">
         <Sun data-icon="inline-start" />
         Light

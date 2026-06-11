@@ -134,7 +134,7 @@ export default async function ProfilePage() {
             <Field>
               <FieldLabel>Appearance</FieldLabel>
               <FieldDescription>
-                Switch between light and dark mode for the workspace.
+                Switch between system, light, and dark mode for the workspace.
               </FieldDescription>
               <ThemeToggle />
             </Field>
