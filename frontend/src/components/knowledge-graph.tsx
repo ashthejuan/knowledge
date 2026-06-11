@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { useTheme } from "next-themes";
 import type { ForceGraphMethods } from "react-force-graph-2d";
 import { ShareNetwork, UploadSimple } from "@phosphor-icons/react";
 
@@ -30,9 +31,52 @@ const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
 
 const CANVAS_HEIGHT = 560;
 const GRAPH_VIEW_PADDING = 72;
-const CANVAS_BG = "#111827";
+
+type GraphColors = {
+  canvas: string;
+  label: string;
+  node: string;
+};
+
+const DEFAULT_GRAPH_COLORS: GraphColors = {
+  canvas: "#ffffff",
+  label: "#111827",
+  node: "rgba(37, 99, 235, 0.9)",
+};
+
+function readGraphColors(): GraphColors {
+  if (typeof window === "undefined") {
+    return DEFAULT_GRAPH_COLORS;
+  }
+
+  const styles = getComputedStyle(document.documentElement);
+
+  return {
+    canvas:
+      styles.getPropertyValue("--graph-canvas").trim() ||
+      DEFAULT_GRAPH_COLORS.canvas,
+    label:
+      styles.getPropertyValue("--graph-label").trim() ||
+      DEFAULT_GRAPH_COLORS.label,
+    node:
+      styles.getPropertyValue("--graph-node").trim() ||
+      DEFAULT_GRAPH_COLORS.node,
+  };
+}
+
+function useGraphColors(): GraphColors {
+  const { resolvedTheme } = useTheme();
+  const [colors, setColors] = useState(DEFAULT_GRAPH_COLORS);
+
+  useEffect(() => {
+    setColors(readGraphColors());
+  }, [resolvedTheme]);
+
+  return colors;
+}
 
 export function KnowledgeGraph() {
+  const graphColors = useGraphColors();
   const [graphData, setGraphData] = useState<GraphData>({
     nodes: [],
     links: [],
@@ -116,14 +160,18 @@ export function KnowledgeGraph() {
         <div
           ref={containerRef}
           className="relative w-full overflow-hidden"
-          style={{ height: CANVAS_HEIGHT, backgroundColor: CANVAS_BG }}
+          style={{ height: CANVAS_HEIGHT, backgroundColor: graphColors.canvas }}
         >
           {isLoading ? (
-            <GraphSkeleton />
+            <GraphSkeleton canvasColor={graphColors.canvas} />
           ) : error ? (
-            <GraphMessage title="Graph unavailable" description={error} />
+            <GraphMessage
+              title="Graph unavailable"
+              description={error}
+              canvasColor={graphColors.canvas}
+            />
           ) : isEmpty ? (
-            <GraphEmptyState />
+            <GraphEmptyState canvasColor={graphColors.canvas} />
           ) : (
             dimensions.width > 0 && (
               <ForceGraph2D
@@ -141,7 +189,7 @@ export function KnowledgeGraph() {
                 linkColor={() => "rgba(148, 163, 184, 0.4)"}
                 linkDirectionalParticles={2}
                 linkDirectionalParticleSpeed={0.005}
-                linkDirectionalParticleColor={() => "rgba(248, 250, 252, 0.78)"}
+                linkDirectionalParticleColor={() => graphColors.label}
                 nodeCanvasObject={(node, ctx, globalScale) => {
                   const typedNode = node as GraphNode & {
                     x: number;
@@ -164,14 +212,14 @@ export function KnowledgeGraph() {
                     2 * Math.PI,
                     false
                   );
-                  ctx.fillStyle = typedNode.color ?? "rgba(37, 99, 235, 0.9)";
+                  ctx.fillStyle = typedNode.color ?? graphColors.node;
                   ctx.fill();
 
                   const fontSize = 12 / globalScale;
                   ctx.font = `${fontSize}px Inter, sans-serif`;
                   ctx.textAlign = "left";
                   ctx.textBaseline = "middle";
-                  ctx.fillStyle = "#f9fafb";
+                  ctx.fillStyle = graphColors.label;
                   ctx.fillText(label, typedNode.x + radius + 8, typedNode.y);
                 }}
               />
@@ -183,30 +231,34 @@ export function KnowledgeGraph() {
   );
 }
 
-function GraphSkeleton() {
+function GraphSkeleton({ canvasColor }: { canvasColor?: string }) {
   return (
     <div
-      className="flex w-full flex-col items-center justify-center gap-4 px-6 text-zinc-400"
-      style={{ height: CANVAS_HEIGHT, backgroundColor: CANVAS_BG }}
+      className="flex w-full flex-col items-center justify-center gap-4 bg-background px-6 text-muted-foreground"
+      style={
+        canvasColor ? { height: CANVAS_HEIGHT, backgroundColor: canvasColor } : { height: CANVAS_HEIGHT }
+      }
     >
       <Spinner className="size-8 text-primary" />
-      <p className="text-sm font-medium">Rendering knowledge graph…</p>
+      <p className="text-sm font-medium text-foreground">
+        Rendering knowledge graph…
+      </p>
     </div>
   );
 }
 
-function GraphEmptyState() {
+function GraphEmptyState({ canvasColor }: { canvasColor: string }) {
   return (
     <Empty
-      className="h-full min-h-[560px] border-none text-zinc-300"
-      style={{ backgroundColor: CANVAS_BG }}
+      className="h-full min-h-[560px] border-none bg-background text-foreground"
+      style={{ backgroundColor: canvasColor }}
     >
       <EmptyHeader>
-        <EmptyMedia variant="icon" className="bg-zinc-800 text-zinc-200">
+        <EmptyMedia variant="icon">
           <UploadSimple weight="duotone" />
         </EmptyMedia>
-        <EmptyTitle className="text-zinc-100">No graph data yet</EmptyTitle>
-        <EmptyDescription className="text-zinc-400">
+        <EmptyTitle>No graph data yet</EmptyTitle>
+        <EmptyDescription>
           Upload documents to extract entities and concepts. Once ingested, their
           relationships will surface here as an interactive graph.
         </EmptyDescription>
@@ -218,17 +270,19 @@ function GraphEmptyState() {
 function GraphMessage({
   title,
   description,
+  canvasColor,
 }: {
   title: string;
   description: string;
+  canvasColor: string;
 }) {
   return (
     <div
-      className="flex h-full w-full flex-col items-center justify-center gap-3 px-8 py-10 text-center text-zinc-300"
-      style={{ backgroundColor: CANVAS_BG }}
+      className="flex h-full w-full flex-col items-center justify-center gap-3 bg-background px-8 py-10 text-center text-muted-foreground"
+      style={{ backgroundColor: canvasColor }}
     >
-      <p className="text-sm font-medium text-zinc-100">{title}</p>
-      <p className="max-w-sm text-xs/relaxed text-zinc-400">{description}</p>
+      <p className="text-sm font-medium text-foreground">{title}</p>
+      <p className="max-w-sm text-xs/relaxed">{description}</p>
     </div>
   );
 }

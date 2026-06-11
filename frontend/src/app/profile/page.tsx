@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { DocumentActions } from "@/components/document-actions";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   WorkspacePage,
   WorkspacePageHeader,
@@ -36,6 +37,11 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import {
+  Field,
+  FieldDescription,
+  FieldLabel,
+} from "@/components/ui/field";
 
 const BACKEND_API_URL = process.env.BACKEND_API_URL ?? "http://localhost:8000";
 
@@ -125,6 +131,13 @@ export default async function ProfilePage() {
               label="Email"
               value={session.user?.email ?? "Not provided"}
             />
+            <Field>
+              <FieldLabel>Appearance</FieldLabel>
+              <FieldDescription>
+                Switch between light and dark mode for the workspace.
+              </FieldDescription>
+              <ThemeToggle />
+            </Field>
           </CardContent>
         </Card>
 
