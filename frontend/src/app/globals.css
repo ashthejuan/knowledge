@@ -132,6 +132,33 @@
   --graph-node: rgba(110, 123, 255, 0.9);
 }
 
+/* KaTeX display math overflow handling */
+.katex {
+  font-size: 1em;
+  line-height: 1.2;
+}
+
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: 0.75rem 0;
+  padding: 0.25rem 0;
+}
+
+.katex-display > .katex {
+  display: inline-block;
+  min-width: 100%;
+  white-space: nowrap;
+}
+
+.katex-display .katex-html {
+  white-space: normal;
+}
+
+.katex .mspace {
+  width: 0.2em;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

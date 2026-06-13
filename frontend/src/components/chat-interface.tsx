@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import {
   PaperPlaneRight,
   Robot,
@@ -247,7 +250,8 @@ function MessageContent({
   return (
     <div className="flex flex-col gap-3 overflow-hidden wrap-break-word">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
         components={{
           h1: ({ children }) => (
             <h1 className="mt-3 text-xl font-semibold first:mt-0">
@@ -336,5 +340,32 @@ function MessageContent({
 }
 
 function normalizeMarkdown(content: string): string {
-  return content.replace(/<br\s*\/?>/gi, "  \n");
+  let normalized = content.replace(/\r\n/g, "\n");
+  normalized = normalized.replace(/<br\s*\/?>/gi, "  \n");
+
+  // Some model outputs use standalone "$" lines to fence equations.
+  // Collapse those into $$ blocks so the markdown math parser can render them.
+  normalized = normalized.replace(
+    /(^|\n)\$\n([\s\S]*?)\n\$(?=\n|$)/g,
+    (_match, leading, math) => `${leading}$$\n${math.trim()}\n$$`
+  );
+
+  // LLMs often emit LaTeX using \(...\) and \[...\] delimiters.
+  // Convert them into the delimiter style supported by remark-math.
+  normalized = normalized
+    .replace(/\\\[((?:.|\n)*?)\\\]/g, "\n\n$$\n$1\n$$\n\n")
+    .replace(/\\\(((?:.|\n)*?)\\\)/g, "$$$1$$");
+
+  // Ensure display math blocks ($$...$$) are separated from surrounding text
+  // with blank lines so remark-math can parse them correctly.
+  normalized = normalized.replace(
+    /([^\n])\n(\$\$)/g,
+    "$1\n\n$2"
+  );
+  normalized = normalized.replace(
+    /(\$\$)\n([^\n])/g,
+    "$1\n\n$2"
+  );
+
+  return normalized;
 }
