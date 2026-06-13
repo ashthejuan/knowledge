@@ -113,7 +113,7 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
                 variant="outline"
                 disabled={isLoading || oauthProvider !== null}
                 onClick={() => handleOAuthSignIn("google")}
-                className="h-10"
+                className="h-10 rounded-md"
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="mr-2 size-4">
                   <path
@@ -141,7 +141,7 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
                 variant="outline"
                 disabled={isLoading || oauthProvider !== null}
                 onClick={() => handleOAuthSignIn("github")}
-                className="h-10 bg-foreground text-background hover:bg-foreground/90"
+                className="h-10 rounded-md border-border bg-foreground text-background hover:bg-foreground/90"
               >
                 <svg
                   aria-hidden="true"
@@ -211,7 +211,7 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
             <Button
               type="submit"
               disabled={isLoading || oauthProvider !== null}
-              className="h-10 w-full"
+              className="h-10 w-full rounded-md shadow-sm"
             >
               {isLoading ? (
                 <>

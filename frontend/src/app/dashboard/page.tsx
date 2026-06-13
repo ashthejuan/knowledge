@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
-import { ChatCircleText, UploadSimple } from "@phosphor-icons/react/dist/ssr";
+import { ArrowRight, ChatCircleText, UploadSimple } from "@phosphor-icons/react/dist/ssr";
 
 import { KnowledgeGraph } from "@/components/knowledge-graph";
 import {
@@ -8,7 +9,7 @@ import {
   WorkspacePageHeader,
   WorkspaceSection,
 } from "@/components/workspace-layout";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { requireAuth } from "@/lib/require-auth";
 
 export const metadata: Metadata = {
@@ -30,33 +31,73 @@ export default async function DashboardPage() {
 
       <WorkspaceSection>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Button asChild variant="outline" className="h-auto p-0">
-            <Link href="/ingest" className="flex w-full flex-col items-start gap-2 p-6 text-left">
-              <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <UploadSimple weight="duotone" data-icon="inline-start" />
-                Ingest Documents
-              </span>
-              <span className="text-xs font-normal text-muted-foreground">
-                Drag and drop files to extract entities and grow the graph.
-              </span>
-            </Link>
-          </Button>
+          <WorkspaceLinkCard
+            href="/ingest"
+            icon={<UploadSimple weight="duotone" className="size-4 text-primary" />}
+            title="Ingest Documents"
+            description="Drag and drop files or submit URLs to extract entities and grow the graph."
+            accent="border-border bg-card text-card-foreground"
+            actionLabel="Open ingest"
+          />
 
-          <Button asChild className="h-auto p-0">
-            <Link href="/chat" className="flex w-full flex-col items-start gap-2 p-6 text-left">
-              <span className="flex items-center gap-2 text-sm font-semibold">
-                <ChatCircleText weight="duotone" data-icon="inline-start" />
-                Launch GraphRAG Chat
-              </span>
-              <span className="text-xs font-normal text-primary-foreground/80">
-                Ask grounded questions across your unified vector context.
-              </span>
-            </Link>
-          </Button>
+          <WorkspaceLinkCard
+            href="/chat"
+            icon={<ChatCircleText weight="duotone" className="size-4 text-primary" />}
+            title="Launch GraphRAG Chat"
+            description="Ask grounded questions across your unified vector context and graph assets."
+            accent="border-border bg-card text-card-foreground"
+            actionLabel="Open chat"
+          />
         </div>
 
         <KnowledgeGraph />
       </WorkspaceSection>
     </WorkspacePage>
+  );
+}
+
+function WorkspaceLinkCard({
+  href,
+  icon,
+  title,
+  description,
+  actionLabel,
+  accent,
+}: {
+  href: string;
+  icon: ReactNode;
+  title: string;
+  description: string;
+  actionLabel: string;
+  accent?: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "flex h-full flex-col justify-between rounded-lg border p-6 text-left shadow-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
+        accent
+      )}
+    >
+      <div className="flex flex-col gap-4">
+        <div className="flex size-9 items-center justify-center rounded-md border border-border bg-muted text-muted-foreground">
+          {icon}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold tracking-[-0.01em] text-foreground">
+            {title}
+          </h2>
+          <p className="max-w-[34ch] text-sm leading-6 text-muted-foreground">
+            {description}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-6 flex items-center gap-2 text-xs font-medium text-foreground/80">
+        <span>{actionLabel}</span>
+        <ArrowRight className="size-3.5" />
+      </div>
+    </Link>
   );
 }

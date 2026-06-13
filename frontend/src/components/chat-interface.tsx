@@ -147,11 +147,19 @@ export function ChatInterface() {
           />
           <Button
             type="submit"
-            size="icon"
+            size="sm"
             disabled={isLoading || !input.trim()}
             aria-label="Send message"
+            className="px-4"
           >
-            {isLoading ? <Spinner /> : <PaperPlaneRight weight="fill" />}
+            {isLoading ? (
+              <Spinner />
+            ) : (
+              <>
+                <PaperPlaneRight weight="fill" />
+                Enter message
+              </>
+            )}
           </Button>
         </form>
       </CardFooter>

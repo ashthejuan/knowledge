@@ -171,12 +171,17 @@ export default async function ProfilePage() {
               PDFs and URLs submitted to the ingestion pipeline.
             </CardDescription>
           </div>
-          <Button asChild size="sm">
-            <Link href="/ingest">
-              <Upload data-icon="inline-start" />
-              Add source
-            </Link>
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button asChild variant="outline" size="sm">
+              <Link href="/ingest">Open ingest</Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link href="/ingest">
+                <Upload data-icon="inline-start" />
+                Add source
+              </Link>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {documents.length === 0 ? (
@@ -191,9 +196,17 @@ export default async function ProfilePage() {
                 </EmptyDescription>
               </EmptyHeader>
               <EmptyContent>
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/ingest">Open ingest</Link>
-                </Button>
+                <div className="flex items-center gap-3">
+                  <Button asChild variant="outline" size="sm">
+                    <Link href="/ingest">Open ingest</Link>
+                  </Button>
+                  <Button asChild size="sm">
+                    <Link href="/ingest">
+                      <Upload data-icon="inline-start" />
+                      Add source
+                    </Link>
+                  </Button>
+                </div>
               </EmptyContent>
             </Empty>
           ) : (
