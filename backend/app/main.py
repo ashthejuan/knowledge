@@ -8,7 +8,7 @@ from app.api.routes.auth import router as auth_router
 from app.api.routes.chat import router as chat_router
 from app.api.routes.graph import router as graph_router
 from app.api.routes.ingest import router as ingest_router
-from app.core.config import get_frontend_origins
+from app.core.cors import build_allowed_origins
 from app.services.graph_db_service import ensure_graph_constraints
 
 logger = logging.getLogger(__name__)
@@ -29,9 +29,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AI Knowledge Platform API", version="1.0", lifespan=lifespan)
 
+allowed_origins = build_allowed_origins()
+logger.info("Allowed CORS origins: %s", allowed_origins)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=get_frontend_origins(),
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
