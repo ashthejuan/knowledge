@@ -24,7 +24,7 @@ def delete_document_graph(document_id: str, user_id: str) -> None:
 def delete_document_objects(
     user_id: str, document_id: str, raw_object_key: str | None
 ) -> None:
-    """Delete raw and processed MinIO objects for a document."""
+    """Delete raw and processed object storage artifacts for a document."""
     keys = [key for key in [raw_object_key, build_processed_key(user_id, document_id)] if key]
 
     for key in keys:

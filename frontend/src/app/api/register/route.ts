@@ -1,4 +1,4 @@
-const BACKEND_API_URL = process.env.BACKEND_API_URL ?? "http://localhost:8000";
+import { API_BASE } from "@/lib/config";
 
 type RegisterPayload = {
   email?: unknown;
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 
   let response: Response;
   try {
-    response = await fetch(`${BACKEND_API_URL}/api/auth/register`, {
+    response = await fetch(`${API_BASE}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

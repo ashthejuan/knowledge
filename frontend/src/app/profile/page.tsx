@@ -18,6 +18,7 @@ import {
   WorkspacePageHeader,
   WorkspaceSection,
 } from "@/components/workspace-layout";
+import { API_BASE } from "@/lib/config";
 import { requireAuth } from "@/lib/require-auth";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -42,8 +43,6 @@ import {
   FieldDescription,
   FieldLabel,
 } from "@/components/ui/field";
-
-const BACKEND_API_URL = process.env.BACKEND_API_URL ?? "http://localhost:8000";
 
 export const metadata: Metadata = {
   title: "Profile",
@@ -71,7 +70,7 @@ async function getDocuments(accessToken?: string): Promise<DocumentListItem[]> {
     return [];
   }
 
-  const response = await fetch(`${BACKEND_API_URL}/api/ingest/documents`, {
+  const response = await fetch(`${API_BASE}/api/ingest/documents`, {
     headers: { Authorization: `Bearer ${accessToken}` },
     cache: "no-store",
   });

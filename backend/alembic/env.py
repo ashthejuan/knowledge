@@ -11,7 +11,9 @@ BACKEND_DIR = Path(__file__).resolve().parents[1]
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-load_dotenv(BACKEND_DIR / ".env")
+env_file = BACKEND_DIR / ".env"
+if env_file.exists():
+    load_dotenv(env_file)
 
 from app.db.base import Base  # noqa: E402
 import app.models  # noqa: E402,F401  (ensures every model is registered on Base.metadata)

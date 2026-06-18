@@ -4,8 +4,9 @@ import GithubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 import { SignJWT } from "jose";
 
+import { API_BASE } from "@/lib/config";
+
 const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET;
-const BACKEND_API_URL = process.env.BACKEND_API_URL ?? "http://localhost:8000";
 
 type BackendUser = {
   id: string;
@@ -77,7 +78,7 @@ async function authorizeCredentials(
   password: string
 ): Promise<BackendLoginResponse | null> {
   try {
-    const response = await fetch(`${BACKEND_API_URL}/api/auth/login`, {
+    const response = await fetch(`${API_BASE}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),

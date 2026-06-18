@@ -1,30 +1,20 @@
-import os
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from typing import Annotated
 
 import jwt
 from argon2 import PasswordHasher
 from argon2.exceptions import Argon2Error
-from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
-
-load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+from app.core.config import get_required_env
 
 # Tokens are minted by NextAuth on the frontend and signed with the shared
 # NEXTAUTH_SECRET using HS256, so the backend verifies them with the identical
 # secret/algorithm pair (via PyJWT). Keeping this contract in one place avoids
 # drift.
-NEXTAUTH_SECRET = os.getenv("NEXTAUTH_SECRET")
+NEXTAUTH_SECRET = get_required_env("NEXTAUTH_SECRET")
 JWT_ALGORITHM = "HS256"
-
-if not NEXTAUTH_SECRET:
-    raise RuntimeError(
-        "NEXTAUTH_SECRET is not configured. It is required to verify the JWTs "
-        "issued by the NextAuth frontend."
-    )
 
 # The tokenUrl is only used to render the interactive docs "Authorize" flow;
 # the real tokens are obtained from the NextAuth session on the frontend.

@@ -10,6 +10,7 @@ import {
   getAuthHeaders,
   throwIfUnauthorized,
 } from "@/lib/auth-fetch";
+import { API_BASE } from "@/lib/config";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,8 +23,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-
-const API_BASE = "http://localhost:8000";
 
 type DocumentAction = "cancel" | "delete";
 

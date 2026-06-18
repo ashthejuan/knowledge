@@ -1,5 +1,6 @@
 import { Message } from "@/types/chat";
 import { getAuthHeaders, throwIfUnauthorized } from "@/lib/auth-fetch";
+import { API_BASE } from "@/lib/config";
 
 export async function* streamChatResponse(
   message: string,
@@ -11,7 +12,7 @@ export async function* streamChatResponse(
     content: msg.content,
   }));
 
-  const response = await fetch("http://localhost:8000/api/chat/stream", {
+  const response = await fetch(`${API_BASE}/api/chat/stream`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

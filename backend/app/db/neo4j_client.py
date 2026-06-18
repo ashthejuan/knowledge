@@ -1,13 +1,8 @@
-import os
-from pathlib import Path
-
-from dotenv import load_dotenv
 from neo4j import GraphDatabase
 
+from app.core.config import get_required_env
+
 _driver = None
-
-
-load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 
 class Neo4jConfigurationError(RuntimeError):
@@ -15,10 +10,10 @@ class Neo4jConfigurationError(RuntimeError):
 
 
 def _required_env(name: str) -> str:
-    value = os.getenv(name)
-    if not value:
-        raise Neo4jConfigurationError(f"{name} is not configured")
-    return value
+    try:
+        return get_required_env(name)
+    except RuntimeError as exc:
+        raise Neo4jConfigurationError(str(exc)) from exc
 
 
 def get_neo4j_driver():

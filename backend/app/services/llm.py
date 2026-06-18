@@ -1,22 +1,20 @@
 import os
-from pathlib import Path
 
-from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from pinecone import Pinecone
 
+from app.core.config import get_required_env
 
-load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL")
+OPENROUTER_API_KEY = get_required_env("OPENROUTER_API_KEY")
+OPENROUTER_MODEL = get_required_env("OPENROUTER_MODEL")
 
 # Pinecone index was created with OpenAI text-embedding-3-small (1536 dims),
 # so we must embed both ingested chunks and queries with the same model.
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
+OPENAI_API_KEY = get_required_env("OPENAI_API_KEY")
+OPENAI_MODEL = get_required_env("OPENAI_MODEL")
+EMBEDDING_MODEL = get_required_env("EMBEDDING_MODEL")
 LLM_REQUEST_TIMEOUT_SECONDS = float(os.getenv("LLM_REQUEST_TIMEOUT_SECONDS", "60"))
 LLM_MAX_RETRIES = int(os.getenv("LLM_MAX_RETRIES", "3"))
 EMBEDDING_REQUEST_TIMEOUT_SECONDS = float(
@@ -24,20 +22,8 @@ EMBEDDING_REQUEST_TIMEOUT_SECONDS = float(
 )
 EMBEDDING_MAX_RETRIES = int(os.getenv("EMBEDDING_MAX_RETRIES", "3"))
 
-PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "knowledge-base")
-
-if not OPENROUTER_API_KEY:
-    raise RuntimeError("OPENROUTER_API_KEY is not configured")
-
-if not OPENAI_API_KEY:
-    raise RuntimeError(
-        "OPENAI_API_KEY is not configured. It is required to generate "
-        "text-embedding-3-small embeddings that match the Pinecone index."
-    )
-
-if not PINECONE_API_KEY:
-    raise RuntimeError("PINECONE_API_KEY is not configured")
+PINECONE_API_KEY = get_required_env("PINECONE_API_KEY")
+PINECONE_INDEX_NAME = get_required_env("PINECONE_INDEX_NAME")
 
 
 # OpenRouter exposes an OpenAI-compatible API, so we reuse LangChain's

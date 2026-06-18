@@ -1,21 +1,18 @@
 import json
-import os
-from pathlib import Path
 
 import boto3
-from dotenv import load_dotenv
+
+from app.core.config import get_required_env
 
 
-load_dotenv(Path(__file__).resolve().parents[2] / ".env")
-
-S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "documents")
+S3_BUCKET_NAME = get_required_env("S3_BUCKET_NAME")
 
 s3_client = boto3.client(
     "s3",
-    endpoint_url=os.getenv("S3_ENDPOINT_URL"),
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    region_name=os.getenv("AWS_REGION", "us-east-1"),
+    endpoint_url=get_required_env("S3_ENDPOINT_URL"),
+    aws_access_key_id=get_required_env("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=get_required_env("AWS_SECRET_ACCESS_KEY"),
+    region_name=get_required_env("AWS_REGION"),
 )
 
 
@@ -23,7 +20,7 @@ def build_document_key(user_id: str, document_id: str, extension: str = "pdf") -
     """Return a tenant-scoped object key for a raw uploaded document.
 
     Prefixing every object with ``users/{user_id}/`` keeps each tenant's blobs
-    in an isolated key namespace inside the shared MinIO bucket.
+    in an isolated key namespace inside the shared object storage bucket.
     """
     return f"users/{user_id}/documents/{document_id}.{extension}"
 
@@ -56,6 +53,17 @@ def upload_file_to_s3(
 def download_file_from_s3(object_key: str) -> bytes:
     response = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=object_key)
     return response["Body"].read()
+
+
+def create_presigned_download_url(
+    object_key: str,
+    expires_in_seconds: int = 3600,
+) -> str:
+    return s3_client.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": S3_BUCKET_NAME, "Key": object_key},
+        ExpiresIn=expires_in_seconds,
+    )
 
 
 def delete_file_from_s3(object_key: str) -> None:

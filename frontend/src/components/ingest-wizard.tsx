@@ -17,6 +17,7 @@ import {
   getAuthHeaders,
   throwIfUnauthorized,
 } from "@/lib/auth-fetch";
+import { API_BASE } from "@/lib/config";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +31,6 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
-const API_BASE = "http://localhost:8000";
 const POLL_INTERVAL_MS = 2000;
 
 type IngestTab = "pdf" | "url";
