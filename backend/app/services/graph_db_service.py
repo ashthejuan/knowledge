@@ -222,6 +222,24 @@ def delete_document_graph(doc_id: str, user_id: str) -> None:
     )
 
 
+def delete_user_graph(user_id: str) -> None:
+    """Remove every Neo4j node and relationship owned by one user."""
+    if not user_id.strip():
+        raise ValueError("user_id is required to delete user graph from Neo4j")
+
+    driver = get_neo4j_driver()
+    with driver.session() as session:
+        session.run(
+            """
+            MATCH (n {user_id: $user_id})
+            DETACH DELETE n
+            """,
+            user_id=user_id.strip(),
+        )
+
+    logger.info("deleted user graph from Neo4j", extra={"user_id": user_id})
+
+
 def write_triples_to_neo4j(
     doc_id: str, user_id: str, extraction_data: KnowledgeGraphExtraction
 ) -> None:

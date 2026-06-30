@@ -71,6 +71,19 @@ def delete_file_from_s3(object_key: str) -> None:
     s3_client.delete_object(Bucket=S3_BUCKET_NAME, Key=object_key)
 
 
+def delete_prefix_from_s3(prefix: str) -> None:
+    """Delete every object under a tenant-scoped prefix."""
+    paginator = s3_client.get_paginator("list_objects_v2")
+
+    for page in paginator.paginate(Bucket=S3_BUCKET_NAME, Prefix=prefix):
+        objects = [{"Key": item["Key"]} for item in page.get("Contents", [])]
+        if objects:
+            s3_client.delete_objects(
+                Bucket=S3_BUCKET_NAME,
+                Delete={"Objects": objects, "Quiet": True},
+            )
+
+
 def upload_json_to_s3(object_key: str, payload: dict) -> str:
     s3_client.put_object(
         Bucket=S3_BUCKET_NAME,

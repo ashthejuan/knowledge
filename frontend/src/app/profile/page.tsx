@@ -6,11 +6,13 @@ import {
   ExternalLink,
   FileText,
   Mail,
+  ShieldAlert,
   Upload,
   UserRound,
   XCircle,
 } from "lucide-react";
 
+import { AccountDeletionActions } from "@/components/account-deletion-actions";
 import { DocumentActions } from "@/components/document-actions";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
@@ -161,6 +163,22 @@ export default async function ProfilePage() {
           </CardContent>
         </Card>
       </WorkspaceSection>
+
+      <Card>
+        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <ShieldAlert data-icon="inline-start" />
+              Danger Zone
+            </CardTitle>
+            <CardDescription>
+              Permanently delete your profile and all workspace data tied to
+              this account.
+            </CardDescription>
+          </div>
+          <AccountDeletionActions />
+        </CardHeader>
+      </Card>
 
       <Card>
         <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

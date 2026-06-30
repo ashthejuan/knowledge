@@ -9,12 +9,14 @@ from sqlalchemy.orm import Session
 from app.core.security import (
     build_credentials_user_id,
     create_access_token,
+    CurrentUser,
     hash_password,
     normalize_email,
     verify_password,
 )
 from app.db.session import get_db
 from app.models.user import User
+from app.services.account_cleanup import delete_account_data
 
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -58,6 +60,10 @@ class UserResponse(BaseModel):
 class LoginResponse(UserResponse):
     access_token: str
     token_type: str = "bearer"
+
+
+class DeleteAccountResponse(BaseModel):
+    status: str
 
 
 def to_user_response(user: User) -> UserResponse:
@@ -109,3 +115,17 @@ def login_user(payload: CredentialsRequest, db: DbSession) -> LoginResponse:
         **to_user_response(user).model_dump(),
         access_token=create_access_token(user.id),
     )
+
+
+@router.delete("/account", response_model=DeleteAccountResponse)
+def delete_current_account(db: DbSession, user_id: CurrentUser) -> DeleteAccountResponse:
+    try:
+        delete_account_data(db, user_id)
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Account cleanup failed; your account was not fully deleted.",
+        ) from exc
+
+    return DeleteAccountResponse(status="deleted")
