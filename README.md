@@ -1,5 +1,5 @@
 # Knowledge Graph Application
-
+https://knowledge-roan-tau.vercel.app
 ## Overview
 This repository contains a fullstack application designed to ingest documents, build a semantic knowledge graph using Neo4j, and provide search and chat capabilities. The backend is implemented in Python (FastAPI) and the frontend is built with Next.js.
 
